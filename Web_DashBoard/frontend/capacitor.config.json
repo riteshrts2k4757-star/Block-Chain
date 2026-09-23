@@ -1,0 +1,12 @@
+{
+  "appId": "com.farmtrace.app",
+  "appName": "FarmTrace",
+  "webDir": "dist",
+  "server": {
+    "androidScheme": "https"
+  },
+  "android": {
+    "backgroundColor": "#F8FAFC",
+    "allowMixedContent": false
+  }
+}

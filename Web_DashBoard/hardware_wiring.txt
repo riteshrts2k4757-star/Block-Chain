@@ -1,0 +1,107 @@
+FARMTRACE PHASE 3: EXACT HARDWARE WIRING & CONFIGURATION
+========================================================
+WARNING: Ensure you match these pins exactly before powering on the boards to avoid short circuits.
+
+--------------------------------------------------------
+SIDE A: CONTAINER NODE (ESP32)
+--------------------------------------------------------
+Board Selection in Arduino IDE: "ESP32 Dev Module"
+Required Libraries:
+ - "DHT sensor library" by Adafruit
+ - "SD" (built-in for ESP32)
+ - "RF24" by TMRh20
+ - mbedtls (built-in for ESP32 crypto)
+
+WIRING MAPPING (ESP32):
+--------------------------------------------------------
+| Module     | Module Pin | ESP32 Pin                  |
+|------------|------------|----------------------------|
+| DHT11      | DATA       | GPIO 4                     |
+| MQ-6       | A0         | GPIO 34 (ADC)              |
+| Battery*   | V_OUT      | GPIO 35 (ADC)              |
+| Solar*     | V_OUT      | GPIO 36 (ADC)              |
+| SD Card    | CS         | GPIO 5                     |
+| SD Card    | MOSI       | GPIO 23 (VSPI MOSI default)|
+| SD Card    | MISO       | GPIO 19 (VSPI MISO default)|
+| SD Card    | SCK        | GPIO 18 (VSPI SCK default) |
+| nRF24L01   | CE         | GPIO 22                    |
+| nRF24L01   | CSN        | GPIO 21                    |
+| nRF24L01   | MOSI       | GPIO 23 (Shared VSPI)      |
+| nRF24L01   | MISO       | GPIO 19 (Shared VSPI)      |
+| nRF24L01   | SCK        | GPIO 18 (Shared VSPI)      |
+
+* NOTE: Battery and Solar inputs MUST go through a voltage divider. Do not connect >3.3V directly to ESP32 ADC pins!
+
+
+--------------------------------------------------------
+SIDE B: DRIVER GATEWAY (NodeMCU ESP8266)
+--------------------------------------------------------
+Board Selection in Arduino IDE: "NodeMCU 1.0 (ESP-12E Module)"
+Required Libraries:
+ - "RF24" by TMRh20
+ - "Adafruit MPU6050" by Adafruit
+ - "Adafruit Unified Sensor" by Adafruit
+
+WIRING MAPPING (NodeMCU ESP8266):
+--------------------------------------------------------
+| Module     | Module Pin | NodeMCU Pin   | ESP8266 GPIO |
+|------------|------------|---------------|--------------|
+| MPU6050    | SDA        | D2            | GPIO 4       |
+| MPU6050    | SCL        | D1            | GPIO 5       |
+| MQ-3       | A0         | A0            | ADC0         |
+| nRF24L01   | CE         | D4            | GPIO 2       |
+| nRF24L01   | CSN        | D8            | GPIO 15      |
+| nRF24L01   | MOSI       | D7 (HSPI)     | GPIO 13      |
+| nRF24L01   | MISO       | D6 (HSPI)     | GPIO 12      |
+| nRF24L01   | SCK        | D5 (HSPI)     | GPIO 14      |
+
+
+========================================================
+CONNECTION DIAGRAMS
+========================================================
+
+[ ESP32 CONTAINER DIAGRAM ]
+                           
+      +-----------------------------+
+      |        ESP32 MODULE         |
+      |                             |
+      |   3V3 ------> Sensor VCC    |
+      |   GND ------> Sensor GND    |
+      |                             |
+      |   G34 <------ MQ-6 (A0)     |
+      |   G35 <------ Battery Div.  |
+      |   G36 <------ Solar Div.    |
+      |   G04 <------ DHT11 Data    |
+      |                             |
+      |   G22 ------> nRF24 CE      |
+      |   G21 ------> nRF24 CSN     |
+      |   G05 ------> SD CS         |
+      |                             |
+      |   G23 ------> MOSI (SD+nRF) |
+      |   G19 <------ MISO (SD+nRF) |
+      |   G18 ------> SCK  (SD+nRF) |
+      +-----------------------------+
+
+
+[ NodeMCU GATEWAY DIAGRAM ]
+
+      +-----------------------------+
+      |       NodeMCU ESP8266       |
+      |                             |
+      |   3V3 ------> Sensor VCC    |
+      |   GND ------> Sensor GND    |
+      |                             |
+      |    A0 <------ MQ-3 (A0)     |
+      |                             |
+      |    D1 ------> MPU6050 SCL   |
+      |    D2 <-----> MPU6050 SDA   |
+      |                             |
+      |    D4 ------> nRF24 CE      |
+      |    D8 ------> nRF24 CSN     |
+      |    D7 ------> nRF24 MOSI    |
+      |    D6 <------ nRF24 MISO    |
+      |    D5 ------> nRF24 SCK     |
+      +-----------------------------+
+
+CRITICAL NOTE ON POWER: 
+The nRF24L01 modules require a very stable 3.3V supply. It is highly recommended to use the "nRF24L01 Socket Adapter" which allows you to power the nRF24 from 5V (like the VIN/VU pin) while it regulates it down to a perfectly smooth 3.3V. If you run it directly off the ESP 3.3V pins without a capacitor, communication WILL fail intermittently!

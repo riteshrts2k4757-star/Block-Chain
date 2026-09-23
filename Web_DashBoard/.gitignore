@@ -1,0 +1,78 @@
+# =============================================
+# FarmTrace — Root .gitignore
+# =============================================
+
+# JDK (downloaded locally)
+jdk-17/
+
+# =============================================
+# Node / npm
+# =============================================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# =============================================
+# Web (Vite build output)
+# =============================================
+web/dist/
+web/.vite/
+
+# =============================================
+# Mobile — React Native
+# =============================================
+
+# Metro bundler cache
+mobile/mobile/.metro-health-check*
+mobile/mobile/.bundle/
+
+# Android build outputs
+mobile/mobile/android/.gradle/
+mobile/mobile/android/app/build/
+mobile/mobile/android/build/
+mobile/mobile/android/local.properties
+
+# iOS build outputs
+mobile/mobile/ios/build/
+mobile/mobile/ios/Pods/
+mobile/mobile/ios/*.xcworkspace/
+mobile/mobile/ios/.xcode.env.local
+
+# React Native cache
+mobile/mobile/.react-native/
+
+# =============================================
+# Zip / archive files (not needed in repo)
+# =============================================
+*.zip
+*.tar.gz
+*.rar
+
+# =============================================
+# Environment files
+# =============================================
+.env
+.env.local
+.env.*.local
+backend/.env
+
+# =============================================
+# OS / Editor artifacts
+# =============================================
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# =============================================
+# Logs
+# =============================================
+*.log
+logs/
