@@ -52,5 +52,28 @@ export const driverPortalService = {
   getNotifications: async () => {
     const response = await fetch(`${API_BASE_URL}/api/driver-portal/notifications`, { headers: getAuthHeaders() });
     return handleResponse(response);
+  },
+  updateDutyStatus: async (status) => {
+    const response = await fetch(`${API_BASE_URL}/api/driver-portal/status`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ status })
+    });
+    return handleResponse(response);
+  },
+  updateTripStatus: async (tripId, status) => {
+    const response = await fetch(`${API_BASE_URL}/api/driver-portal/trip/${tripId}/status`, {
+      method: 'PUT',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ status })
+    });
+    return handleResponse(response);
+  },
+  acknowledgeAlert: async (alertId) => {
+    const response = await fetch(`${API_BASE_URL}/api/driver-portal/alerts/${alertId}/acknowledge`, {
+      method: 'PUT',
+      headers: getAuthHeaders()
+    });
+    return handleResponse(response);
   }
 };

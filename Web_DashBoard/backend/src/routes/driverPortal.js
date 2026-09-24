@@ -14,5 +14,8 @@ router.get('/alerts', driverPortalController.getAlerts);
 router.get('/profile', driverPortalController.getProfile);
 router.put('/profile', driverPortalController.updateProfile);
 router.get('/notifications', driverPortalController.getNotifications);
+router.post('/status', driverPortalController.updateDutyStatus);
+router.put('/trip/:id/status', driverPortalController.updateTripStatus);
+router.put('/alerts/:id/acknowledge', driverPortalController.acknowledgeAlert);
 
 module.exports = router;

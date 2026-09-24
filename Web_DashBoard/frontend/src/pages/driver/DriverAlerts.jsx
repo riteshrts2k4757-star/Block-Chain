@@ -21,9 +21,15 @@ export default function DriverAlerts() {
       .finally(() => setLoading(false));
   }, []);
 
-  const acknowledgeAlert = (id) => {
-    // In a real app this would call an API to mark as read, but for UI:
-    setDriverAlerts(prev => prev.map(a => a._id === id ? { ...a, acknowledged: true } : a));
+  const acknowledgeAlert = async (id) => {
+    try {
+      const res = await driverPortalService.acknowledgeAlert(id);
+      if (res.success) {
+        setDriverAlerts(prev => prev.map(a => a._id === id ? { ...a, acknowledged: true } : a));
+      }
+    } catch (err) {
+      console.error('Failed to acknowledge alert:', err);
+    }
   };
 
   if (loading) {

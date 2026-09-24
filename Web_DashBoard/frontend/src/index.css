@@ -110,6 +110,11 @@ a {
   font-weight: 600;
 }
 
+.sidebar-nav {
+  flex: 1;
+  overflow-y: auto;
+}
+
 .main-area {
   flex: 1;
   display: flex;
@@ -276,4 +281,9 @@ a {
 /* Driver Specific Shell Adjustments */
 .driver-shell .sidebar {
   width: 220px;
+}
+
+/* Map Customizations */
+.map-tiles {
+  filter: grayscale(0.9) brightness(1.05) contrast(1.1);
 }

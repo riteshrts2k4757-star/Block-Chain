@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Route, Clock, AlertTriangle, User, LogOut, Menu, X, Leaf, Bell } from 'lucide-react';
+import { LayoutDashboard, Route, Clock, AlertTriangle, User, LogOut, Menu, X, Leaf, Bell, MapPin, Activity } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { DriverNotificationPanel } from '../components/driver/DriverNotificationPanel';
 import { driverPortalService } from '../services/driverPortal';
 
 const driverNavItems = [
   { path: '/driver/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { path: '/driver/trip', label: 'Current Trip', icon: Route },
+  { path: '/driver/trip', label: 'My Trip', icon: Route },
   { path: '/driver/logbook', label: 'Logbook', icon: Clock },
+  { path: '/driver/telemetry', label: 'Live Telemetry', icon: Activity },
   { path: '/driver/alerts', label: 'Alerts', icon: AlertTriangle, badge: true },
   { path: '/driver/profile', label: 'Profile', icon: User },
 ];

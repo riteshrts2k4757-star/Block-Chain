@@ -205,12 +205,18 @@ export default function Login() {
             <div style={{ marginTop: '40px', padding: '16px', background: 'var(--bg-main)', border: '1px dashed var(--border)', borderRadius: '12px' }}>
               <h3 style={{ fontSize: '0.8rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-tertiary)', margin: '0 0 12px 0', letterSpacing: '0.05em' }}>Demo Access</h3>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '0.85rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ color: 'var(--text-secondary)' }}>Admin</span>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ color: 'var(--text-secondary)' }}>Admin</span>
+                    <button type="button" onClick={() => setFormData({ email: 'test@gmail.com', password: 'test' })} style={{ padding: '2px 8px', fontSize: '0.7rem', background: 'var(--primary)', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>Use this</button>
+                  </div>
                   <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>test@gmail.com / test</span>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ color: 'var(--text-secondary)' }}>Driver</span>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ color: 'var(--text-secondary)' }}>Driver</span>
+                    <button type="button" onClick={() => setFormData({ email: 'driver@farmtrace.io', password: 'driver' })} style={{ padding: '2px 8px', fontSize: '0.7rem', background: 'var(--bg-hover)', color: 'var(--text-primary)', border: '1px solid var(--border)', borderRadius: '4px', cursor: 'pointer' }}>Use</button>
+                  </div>
                   <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>driver@farmtrace.io / driver</span>
                 </div>
               </div>

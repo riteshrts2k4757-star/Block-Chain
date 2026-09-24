@@ -31,10 +31,12 @@ import AlertRules from './pages/admin/AlertRules';
 import LoadConfiguration from './pages/admin/LoadConfiguration';
 import LiveLoadTesting from './pages/admin/LiveLoadTesting';
 import { TelemetryTable, Logbook as AdminLogbook, Devices, Profile as AdminProfile } from './pages/admin/GenericPages';
+import LoadTracking from './pages/admin/LoadTracking';
 
 // Driver Pages
 import DriverDashboard from './pages/driver/DriverDashboard';
 import DriverAlerts from './pages/driver/DriverAlerts';
+import DriverTelemetry from './pages/driver/DriverTelemetry';
 import { DriverTrip, DriverLogbook, DriverProfile } from './pages/driver/DriverGenericPages';
 
 const ProtectedRoute = ({ children, allowedRole }) => {
@@ -52,11 +54,13 @@ export default function App() {
       <Route path="/" element={<Navigate to="/login" replace />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
+      <Route path="/load-tracking" element={<Navigate to="/admin/load-tracking" replace />} />
 
       {/* Admin Routes */}
       <Route path="/admin" element={<ProtectedRoute allowedRole="admin"><AdminLayout /></ProtectedRoute>}>
         <Route index element={<Navigate to="telemetry" replace />} />
         <Route path="dashboard" element={<AdminDashboard />} />
+        <Route path="load-tracking" element={<LoadTracking />} />
         <Route path="fleet" element={<Fleet />} />
         <Route path="fleet/:id" element={<DriverDetails />} />
         <Route path="alert-rules" element={<AlertRules />} />
@@ -87,6 +91,7 @@ export default function App() {
         <Route path="dashboard" element={<DriverDashboard />} />
         <Route path="trip" element={<DriverTrip />} />
         <Route path="logbook" element={<DriverLogbook />} />
+        <Route path="telemetry" element={<DriverTelemetry />} />
         <Route path="alerts" element={<DriverAlerts />} />
         <Route path="profile" element={<DriverProfile />} />
       </Route>

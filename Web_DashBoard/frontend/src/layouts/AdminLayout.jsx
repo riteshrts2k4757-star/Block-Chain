@@ -3,7 +3,7 @@ import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, Truck, Activity, Bell, Settings, Shield, 
   Database, AlertTriangle, Menu, X, Leaf, Zap, Wifi,
-  CheckCircle, Radio, LogOut, Clock, Link as LinkIcon, Package
+  CheckCircle, Radio, LogOut, Clock, Link as LinkIcon, Package, MapPin
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useTelemetry } from '../context/TelemetryContext';
@@ -17,6 +17,7 @@ const adminNavItems = [
   { path: '/admin/fleet', label: 'Fleet Status', icon: Truck },
   
   { section: 'Monitoring' },
+  { path: '/admin/load-tracking', label: 'Load Tracking', icon: MapPin },
   { path: '/admin/telemetry', label: 'Live Telemetry', icon: Activity },
   { path: '/admin/gas-safety', label: 'Gas & Safety', icon: Zap },
   { path: '/admin/energy', label: 'Energy & Battery', icon: Battery },
