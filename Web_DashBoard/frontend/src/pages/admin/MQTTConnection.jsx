@@ -22,10 +22,10 @@ export default function MQTTConnection() {
           </div>
           
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            <DetailRow label="Broker URL" value="mqtt://localhost" />
+            <DetailRow label="Broker URL" value="mqtt://broker.emqx.io" />
             <DetailRow label="MQTT Port" value="1883" />
-            <DetailRow label="WebSocket Port" value="3000" />
-            <DetailRow label="Client ID" value="FarmTrace_Dashboard_Web" />
+            <DetailRow label="WebSocket Port" value="8083" />
+            <DetailRow label="Client ID" value="FarmTrace_Hardware_Node" />
             <DetailRow label="Total Packets" value={packetsReceived.driver + packetsReceived.container} highlight />
           </div>
         </div>
