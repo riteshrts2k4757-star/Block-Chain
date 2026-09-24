@@ -61,13 +61,36 @@ npm run dev
 
 ---
 
-## 📡 Hardware Deployment (ESP32)
-The hardware codebase is located in `FarmTrace_MQTT_Project`. 
+## 📡 Hardware Deployment (ESP32 & ESP8266)
+
+The IoT hardware layer consists of two custom-built nodes that communicate via **nRF24L01** locally and bridge to the cloud via **MQTT**. The source code is located in `FarmTrace_MQTT_Project/`.
+
+### 1. Driver Node (ESP8266)
+Monitors the driver's state and environmental safety in the cabin.
+*   **Microcontroller**: ESP8266 NodeMCU
+*   **Sensors**: 
+    *   **MPU6050 Accelerometer/Gyroscope**: Detects harsh braking, sudden acceleration, and erratic steering.
+    *   **MQ-3 Alcohol Gas Sensor**: Detects ambient alcohol levels to prevent drunk driving.
+*   **Circuit Diagram**: 
+    ![ESP8266 Driver Circuit Diagram](FarmTrace_MQTT_Project/circuit_diagrams/esp8266_circuit_diagram.jpg)
+*   **Code Location**: `FarmTrace_MQTT_Project/driver_esp8266/FarmTrace_Driver.ino`
+
+### 2. Container Node (ESP32)
+Monitors the cargo environment securely inside the truck container.
+*   **Microcontroller**: ESP32 DevKit V1
+*   **Sensors**:
+    *   **DHT11 Temperature & Humidity**: Ensures the cold-chain or cargo environment remains within the loaded profile's limits.
+    *   **MQ-6 Gas Sensor**: Detects LPG/Butane leaks or fire risks.
+    *   **GPS**: Fixed simulated transmission for routing and real-time map tracking.
+*   **Circuit Diagram**:
+    ![ESP32 Container Circuit Diagram](FarmTrace_MQTT_Project/circuit_diagrams/esp32_circuit_diagram.jpg)
+*   **Code Location**: `FarmTrace_MQTT_Project/container_esp32/FarmTrace_Container.ino`
+
+### Flashing the Firmware
 1. Open the `.ino` files in Arduino IDE.
-2. Ensure you have the `PubSubClient` and `WiFi` libraries installed.
-3. Change the `ssid` and `password` to match your local network.
-4. Update the `mqtt_server` IP address to match the machine running your Node.js MQTT server.
-5. Flash the code to your ESP32 nodes.
+2. Ensure you have the `PubSubClient`, `RF24`, `Adafruit MPU6050`, and `DHT` libraries installed via the Library Manager.
+3. Update the `WIFI_SSID` and `WIFI_PASSWORD` macros to match your local hotspot/network.
+4. Flash the code to the respective ESP32 and ESP8266 boards.
 
 ---
 

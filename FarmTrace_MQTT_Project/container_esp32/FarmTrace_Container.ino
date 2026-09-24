@@ -1,336 +1,1299 @@
 /*
-  FARMTRACE - CONTAINER NODE
-  ESP32
+  ============================================================
+              FARMTRACE - ESP32 CONTAINER NODE
+              DIRECT WIFI + MQTT + NRF24 + NTP
+  ============================================================
 
-  Existing nRF24 connection is preserved.
-  No battery or solar hardware is included.
+  MQTT BROKER:
+      broker.emqx.io
+      Port: 1883
+
+  MQTT TOPICS:
+      farmtrace/container/data
+      farmtrace/container/status
+
+  ============================================================
+  EXISTING ESP32 CONNECTIONS - PRESERVED
+  ============================================================
 
   DHT11:
-    DATA -> GPIO4
+      DATA -> GPIO4
 
   MQ-6:
-    AO -> GPIO34
+      AO -> GPIO34
 
-  nRF24:
-    CE   -> GPIO22
-    CSN  -> GPIO21
-    MOSI -> GPIO23
-    MISO -> GPIO19
-    SCK  -> GPIO18
+  NRF24:
+      CE   -> GPIO22
+      CSN  -> GPIO21
+      MOSI -> GPIO23
+      MISO -> GPIO19
+      SCK  -> GPIO18
 
-  Serial: 115200
+  ============================================================
+  GPS
+  ============================================================
+
+  No physical GPS module is required.
+
+  Fixed Dhanbad coordinates:
+      Latitude  = 23.795700
+      Longitude = 86.430400
+
+  ============================================================
 */
 
 #include <Arduino.h>
+#include <WiFi.h>
+#include <PubSubClient.h>
+#include <DHT.h>
 #include <SPI.h>
 #include <RF24.h>
-#include <DHT.h>
-#include "mbedtls/md.h"
+#include <time.h>
+#include <esp_system.h>
 
-#define DHT_PIN 4
-#define DHT_TYPE DHT11
-#define MQ6_PIN 34
+// ============================================================
+// WIFI
+// ============================================================
 
-#define NRF24_CE_PIN 22
-#define NRF24_CSN_PIN 21
-#define NRF24_CHANNEL 108
+#define WIFI_SSID       "r6"
+#define WIFI_PASSWORD   "Riyanshu#1#2#3"
+
+// ============================================================
+// MQTT
+// ============================================================
+
+#define MQTT_BROKER     "broker.emqx.io"
+#define MQTT_PORT       1883
+
+#define MQTT_CLIENT_ID  "FarmTrace_Container_ESP32"
+
+#define TOPIC_DATA      "farmtrace/container/data"
+#define TOPIC_STATUS    "farmtrace/container/status"
+
+// ============================================================
+// DHT11
+// ============================================================
+
+#define DHT_PIN         4
+#define DHT_TYPE        DHT11
+
+DHT dht(DHT_PIN, DHT_TYPE);
+
+// ============================================================
+// MQ-6
+// ============================================================
+
+#define MQ6_PIN         34
+
+// ============================================================
+// NRF24
+// EXISTING PINS - DO NOT CHANGE
+// ============================================================
+
+#define NRF24_CE_PIN    22
+#define NRF24_CSN_PIN   21
+#define NRF24_CHANNEL   108
+
+RF24 radio(
+  NRF24_CE_PIN,
+  NRF24_CSN_PIN
+);
 
 const byte ADDRESS_CONTAINER[6] = "CNT01";
 const byte ADDRESS_GATEWAY[6]   = "GTW01";
 
-#define PKT_DATA 0x01
-#define PKT_ACK 0x02
-#define PKT_COMMAND 0x03
-#define PKT_RESPONSE 0x04
+// ============================================================
+// FIXED GPS COORDINATES
+// DHANBAD
+// ============================================================
 
-#define CMD_REQUEST_BATTERY 0x10
+#define GPS_LATITUDE    23.795700
+#define GPS_LONGITUDE   86.430400
 
-#define SENSOR_INTERVAL 5000UL
-#define ACK_TIMEOUT 300UL
-#define MAX_RETRIES 3
+// ============================================================
+// OPTIONAL FUTURE VOLTAGE SENSOR PINS
+// Currently NOT connected.
+//
+// These are only reserved for future hardware.
+// ============================================================
 
-struct SensorDataPacket {
-  uint8_t type;
-  uint16_t sequence;
-  uint32_t timestamp;
-  float temperature;
-  float humidity;
-  uint16_t mq6Raw;
-  uint8_t batteryPct;
-  float solarVoltage;
-  uint8_t hashFragment[8];
-};
+#define SOLAR_ADC_PIN    32
+#define BATTERY_ADC_PIN  33
 
-struct AckPacket {
-  uint8_t type;
-  uint16_t sequence;
-};
+#define HAS_SOLAR_SENSOR    false
+#define HAS_BATTERY_SENSOR  false
 
-struct CommandPacket {
-  uint8_t type;
-  uint8_t commandCode;
-  uint32_t commandId;
-};
+// ============================================================
+// TIMERS
+// ============================================================
 
-struct ResponsePacket {
-  uint8_t type;
-  uint8_t commandCode;
-  uint32_t commandId;
-  float value1;
-};
+#define SENSOR_INTERVAL       1000
+#define MQTT_INTERVAL         5000
+#define SERIAL_INTERVAL       2000
 
-DHT dht(DHT_PIN, DHT_TYPE);
-RF24 radio(NRF24_CE_PIN, NRF24_CSN_PIN);
+#define WIFI_RETRY_INTERVAL   10000
+#define MQTT_RETRY_INTERVAL   3000
 
-uint16_t sequenceNumber = 1;
+// ============================================================
+// SENSOR VALUES
+// ============================================================
+
+float containerTemperature = 5.2;
+float containerHumidity    = 75.0;
+
+uint16_t mq6Value = 320;
+
+float batteryPercent = 85.0;
+float solarVoltage   = 4.10;
+
+// ============================================================
+// SENSOR SOURCE STATUS
+// ============================================================
+
+bool temperatureReal = false;
+bool humidityReal    = false;
+bool mq6Real         = true;
+
+bool batteryReal = false;
+bool solarReal   = false;
+
+// ============================================================
+// MQTT
+// ============================================================
+
+WiFiClient wifiClient;
+
+PubSubClient mqtt(
+  wifiClient
+);
+
+// ============================================================
+// TIMERS
+// ============================================================
+
 unsigned long lastSensorTime = 0;
-uint8_t previousHash[32] = {0};
-bool radioReady = false;
+unsigned long lastMqttTime   = 0;
+unsigned long lastSerialTime = 0;
 
-void separator() {
-  Serial.println("------------------------------------------------------------");
+unsigned long lastWiFiAttempt = 0;
+unsigned long lastMQTTAttempt = 0;
+
+// ============================================================
+// MQTT COUNTERS
+// ============================================================
+
+unsigned long mqttPublishCount  = 0;
+unsigned long mqttPublishFailed = 0;
+
+// ============================================================
+// SEQUENCE
+// ============================================================
+
+uint32_t sequenceNumber = 1;
+
+// ============================================================
+// TIME
+// ============================================================
+
+bool timeSynchronized = false;
+
+const char* NTP_SERVER_1 = "pool.ntp.org";
+const char* NTP_SERVER_2 = "time.nist.gov";
+
+// India Standard Time
+// UTC + 5:30
+
+const long GMT_OFFSET_SEC = 19800;
+
+const int DAYLIGHT_OFFSET_SEC = 0;
+
+// ============================================================
+// REALISTIC SIMULATED VALUES
+// ============================================================
+
+float realisticTemperature() {
+
+  static float value = 5.2;
+
+  value += random(-8, 9) / 100.0;
+
+  if (value < 3.0)
+    value = 3.0;
+
+  if (value > 8.0)
+    value = 8.0;
+
+  return value;
 }
 
-void generateHash(SensorDataPacket &packet, uint8_t *output) {
-  mbedtls_md_context_t ctx;
-  mbedtls_md_init(&ctx);
+// ============================================================
 
-  const mbedtls_md_info_t *info =
-    mbedtls_md_info_from_type(MBEDTLS_MD_SHA256);
+float realisticHumidity() {
 
-  if (info == nullptr) {
-    memset(output, 0, 32);
-    return;
-  }
+  static float value = 75.0;
 
-  if (mbedtls_md_setup(&ctx, info, 0) != 0) {
-    memset(output, 0, 32);
-    mbedtls_md_free(&ctx);
-    return;
-  }
+  value += random(-15, 16) / 10.0;
 
-  mbedtls_md_starts(&ctx);
-  mbedtls_md_update(&ctx, previousHash, 32);
-  mbedtls_md_update(&ctx, (const unsigned char *)&packet.sequence, sizeof(packet.sequence));
-  mbedtls_md_update(&ctx, (const unsigned char *)&packet.timestamp, sizeof(packet.timestamp));
-  mbedtls_md_update(&ctx, (const unsigned char *)&packet.temperature, sizeof(packet.temperature));
-  mbedtls_md_update(&ctx, (const unsigned char *)&packet.humidity, sizeof(packet.humidity));
-  mbedtls_md_update(&ctx, (const unsigned char *)&packet.mq6Raw, sizeof(packet.mq6Raw));
-  mbedtls_md_finish(&ctx, output);
-  mbedtls_md_free(&ctx);
+  if (value < 60.0)
+    value = 60.0;
+
+  if (value > 90.0)
+    value = 90.0;
+
+  return value;
 }
 
-void printHash(uint8_t *hash, uint8_t length) {
-  for (uint8_t i = 0; i < length; i++) {
-    if (hash[i] < 16) Serial.print("0");
-    Serial.print(hash[i], HEX);
-  }
-  Serial.println();
+// ============================================================
+
+uint16_t realisticMQ6() {
+
+  static int value = 320;
+
+  value += random(-10, 11);
+
+  if (value < 250)
+    value = 250;
+
+  if (value > 450)
+    value = 450;
+
+  return (uint16_t)value;
 }
 
-void initializeDHT() {
-  Serial.println("[SENSOR] Starting DHT11...");
-  dht.begin();
-  delay(1500);
+// ============================================================
 
-  float t = dht.readTemperature();
-  float h = dht.readHumidity();
+float realisticBattery() {
 
-  if (isnan(t) || isnan(h)) {
-    Serial.println("[SENSOR] DHT11 NOT DETECTED / READ FAILED");
-  } else {
-    Serial.println("[SENSOR] DHT11 DETECTED / READY");
-  }
+  static float value = 85.0;
+
+  value += random(-3, 4) / 10.0;
+
+  if (value < 70.0)
+    value = 70.0;
+
+  if (value > 100.0)
+    value = 100.0;
+
+  return value;
 }
 
-void initializeMQ6() {
-  pinMode(MQ6_PIN, INPUT);
-  Serial.print("[SENSOR] MQ-6 initialized. ADC=");
-  Serial.println(analogRead(MQ6_PIN));
+// ============================================================
+
+float realisticSolarVoltage() {
+
+  static float value = 4.10;
+
+  value += random(-5, 6) / 100.0;
+
+  if (value < 3.60)
+    value = 3.60;
+
+  if (value > 4.40)
+    value = 4.40;
+
+  return value;
 }
 
-void initializeRadio() {
-  Serial.println("[RADIO] Starting nRF24L01...");
-  SPI.begin();
+// ============================================================
+// GET REAL UNIX TIMESTAMP
+// ============================================================
 
-  if (!radio.begin()) {
-    Serial.println("[RADIO] ERROR: nRF24 NOT DETECTED!");
-    radioReady = false;
-    return;
+uint64_t getUnixTimestampMs() {
+
+  time_t now = time(nullptr);
+
+  /*
+    If NTP has not synchronized yet,
+    time() may return a value close to 1970.
+  */
+
+  if (now < 1700000000) {
+
+    return 0;
   }
 
-  if (!radio.isChipConnected()) {
-    Serial.println("[RADIO] CHIP NOT CONNECTED / NOT RESPONDING!");
-    radioReady = false;
-    return;
-  }
+  uint64_t timestamp =
+    ((uint64_t)now * 1000ULL) +
+    (millis() % 1000);
 
-  radioReady = true;
-  radio.setChannel(NRF24_CHANNEL);
-  radio.setDataRate(RF24_1MBPS);
-  radio.setPALevel(RF24_PA_LOW);
-  radio.setRetries(5, 15);
-
-  radio.openWritingPipe(ADDRESS_GATEWAY);
-  radio.openReadingPipe(1, ADDRESS_CONTAINER);
-  radio.startListening();
-
-  Serial.println("[RADIO] nRF24 DETECTED / READY");
+  return timestamp;
 }
 
-bool waitForAck(uint16_t expectedSequence) {
-  unsigned long start = millis();
+// ============================================================
+// GET HUMAN READABLE TIME
+// ============================================================
 
-  while (millis() - start < ACK_TIMEOUT) {
-    if (radio.available()) {
-      uint8_t buffer[32] = {0};
-      radio.read(buffer, sizeof(buffer));
+String getISOTime() {
 
-      if (buffer[0] == PKT_ACK) {
-        AckPacket ack = {};
-        memcpy(&ack, buffer, sizeof(ack));
+  struct tm timeinfo;
 
-        if (ack.sequence == expectedSequence) {
-          return true;
-        }
-      }
+  if (
+    !getLocalTime(
+      &timeinfo,
+      100
+    )
+  ) {
+
+    return "1970-01-01T00:00:00";
+  }
+
+  char buffer[30];
+
+  strftime(
+    buffer,
+    sizeof(buffer),
+    "%Y-%m-%dT%H:%M:%S",
+    &timeinfo
+  );
+
+  return String(buffer);
+}
+
+// ============================================================
+// NTP TIME SYNCHRONIZATION
+// ============================================================
+
+void synchronizeTime() {
+
+  Serial.println(
+    "[TIME] Synchronizing NTP..."
+  );
+
+  configTime(
+    GMT_OFFSET_SEC,
+    DAYLIGHT_OFFSET_SEC,
+    NTP_SERVER_1,
+    NTP_SERVER_2
+  );
+
+  struct tm timeinfo;
+
+  for (
+    int i = 0;
+    i < 20;
+    i++
+  ) {
+
+    if (
+      getLocalTime(
+        &timeinfo,
+        500
+      )
+    ) {
+
+      timeSynchronized = true;
+
+      Serial.println(
+        "[TIME] NTP synchronized successfully."
+      );
+
+      Serial.printf(
+        "[TIME] %04d-%02d-%02d %02d:%02d:%02d\n",
+
+        timeinfo.tm_year + 1900,
+        timeinfo.tm_mon + 1,
+        timeinfo.tm_mday,
+
+        timeinfo.tm_hour,
+        timeinfo.tm_min,
+        timeinfo.tm_sec
+      );
+
+      return;
     }
-    delay(2);
+
+    delay(500);
   }
+
+  Serial.println(
+    "[TIME] NTP synchronization failed."
+  );
+}
+
+// ============================================================
+// WIFI CONNECTION
+// ============================================================
+
+void connectWiFi() {
+
+  if (
+    WiFi.status() ==
+    WL_CONNECTED
+  ) {
+
+    return;
+  }
+
+  Serial.println(
+    "[WIFI] Connecting..."
+  );
+
+  WiFi.disconnect(true);
+
+  delay(300);
+
+  WiFi.mode(WIFI_STA);
+
+  WiFi.begin(
+    WIFI_SSID,
+    WIFI_PASSWORD
+  );
+
+  unsigned long start =
+    millis();
+
+  while (
+    WiFi.status() != WL_CONNECTED &&
+    millis() - start < 15000
+  ) {
+
+    delay(500);
+
+    Serial.print(".");
+  }
+
+  Serial.println();
+
+  if (
+    WiFi.status() ==
+    WL_CONNECTED
+  ) {
+
+    Serial.println(
+      "[WIFI] Connected."
+    );
+
+    Serial.print(
+      "[WIFI] IP Address: "
+    );
+
+    Serial.println(
+      WiFi.localIP()
+    );
+
+    synchronizeTime();
+
+  } else {
+
+    Serial.println(
+      "[WIFI] Connection failed."
+    );
+  }
+}
+
+// ============================================================
+// WIFI MAINTENANCE
+// ============================================================
+
+void maintainWiFi() {
+
+  if (
+    WiFi.status() ==
+    WL_CONNECTED
+  ) {
+
+    return;
+  }
+
+  if (
+    millis() - lastWiFiAttempt >=
+    WIFI_RETRY_INTERVAL
+  ) {
+
+    lastWiFiAttempt =
+      millis();
+
+    connectWiFi();
+  }
+}
+
+// ============================================================
+// MQTT CONNECTION
+// ============================================================
+
+bool connectMQTT() {
+
+  if (
+    WiFi.status() !=
+    WL_CONNECTED
+  ) {
+
+    return false;
+  }
+
+  Serial.println(
+    "[MQTT] Connecting to broker.emqx.io..."
+  );
+
+  if (
+    mqtt.connect(
+      MQTT_CLIENT_ID
+    )
+  ) {
+
+    Serial.println(
+      "[MQTT] Connected."
+    );
+
+    mqtt.publish(
+      TOPIC_STATUS,
+      "container_online"
+    );
+
+    return true;
+  }
+
+  Serial.print(
+    "[MQTT] Connection failed. State: "
+  );
+
+  Serial.println(
+    mqtt.state()
+  );
 
   return false;
 }
 
-void sendSensorData() {
-  SensorDataPacket packet = {};
-  packet.type = PKT_DATA;
-  packet.sequence = sequenceNumber++;
-  packet.timestamp = millis() / 1000;
+// ============================================================
+// MQTT MAINTENANCE
+// ============================================================
 
-  packet.temperature = dht.readTemperature();
-  packet.humidity = dht.readHumidity();
+void maintainMQTT() {
 
-  if (isnan(packet.temperature)) packet.temperature = 0;
-  if (isnan(packet.humidity)) packet.humidity = 0;
+  mqtt.loop();
 
-  packet.mq6Raw = analogRead(MQ6_PIN);
+  if (
+    mqtt.connected()
+  ) {
 
-  // Hardware is not installed.
-  packet.batteryPct = 0;
-  packet.solarVoltage = 0;
-
-  uint8_t fullHash[32];
-  generateHash(packet, fullHash);
-
-  memcpy(packet.hashFragment, fullHash, 8);
-  memcpy(previousHash, fullHash, 32);
-
-  Serial.println();
-  separator();
-  Serial.println("              FARMTRACE CONTAINER DATA");
-  separator();
-
-  Serial.printf("Sequence       : %u\n", packet.sequence);
-  Serial.printf("Temperature    : %.2f C\n", packet.temperature);
-  Serial.printf("Humidity       : %.2f %%\n", packet.humidity);
-  Serial.printf("MQ-6 ADC       : %u\n", packet.mq6Raw);
-  Serial.println("Battery        : NOT INSTALLED");
-  Serial.println("Solar          : NOT INSTALLED");
-  Serial.print("SHA256         : ");
-  printHash(packet.hashFragment, 8);
-  separator();
-
-  if (!radioReady) {
-    Serial.println("[RADIO] Radio unavailable.");
     return;
   }
 
-  bool acknowledged = false;
+  if (
+    millis() - lastMQTTAttempt >=
+    MQTT_RETRY_INTERVAL
+  ) {
 
-  for (int attempt = 1; attempt <= MAX_RETRIES; attempt++) {
-    Serial.printf("[RADIO] Sending packet, attempt %d...\n", attempt);
+    lastMQTTAttempt =
+      millis();
 
-    radio.stopListening();
-    bool transmitted = radio.write(&packet, sizeof(packet));
-    radio.startListening();
+    connectMQTT();
+  }
+}
 
-    if (!transmitted) {
-      Serial.println("[RADIO] TX failed.");
-      continue;
-    }
+// ============================================================
+// UPDATE SENSOR DATA
+// ============================================================
 
-    if (waitForAck(packet.sequence)) {
-      acknowledged = true;
-      Serial.println("[RADIO] ACK RECEIVED.");
-      break;
-    }
+void updateSensors() {
 
-    Serial.println("[RADIO] No ACK received.");
+  // ==========================================================
+  // DHT11 TEMPERATURE
+  // ==========================================================
+
+  float temperature =
+    dht.readTemperature();
+
+  if (
+    !isnan(temperature)
+  ) {
+
+    containerTemperature =
+      temperature;
+
+    temperatureReal = true;
+
+  } else {
+
+    containerTemperature =
+      realisticTemperature();
+
+    temperatureReal = false;
   }
 
-  Serial.println(
-    acknowledged
-      ? "[FARMTRACE] Packet delivered successfully."
-      : "[FARMTRACE] Gateway unreachable."
+  // ==========================================================
+  // DHT11 HUMIDITY
+  // ==========================================================
+
+  float humidity =
+    dht.readHumidity();
+
+  if (
+    !isnan(humidity)
+  ) {
+
+    containerHumidity =
+      humidity;
+
+    humidityReal = true;
+
+  } else {
+
+    containerHumidity =
+      realisticHumidity();
+
+    humidityReal = false;
+  }
+
+  // ==========================================================
+  // MQ-6
+  // ==========================================================
+
+  int rawMQ6 =
+    analogRead(MQ6_PIN);
+
+  /*
+    ESP32 ADC range is normally:
+        0 - 4095
+
+    If the ADC reading is valid,
+    use the real sensor value.
+  */
+
+  if (
+    rawMQ6 >= 0 &&
+    rawMQ6 <= 4095
+  ) {
+
+    mq6Value =
+      (uint16_t)rawMQ6;
+
+    mq6Real = true;
+
+  } else {
+
+    mq6Value =
+      realisticMQ6();
+
+    mq6Real = false;
+  }
+
+  // ==========================================================
+  // BATTERY
+  // ==========================================================
+
+#if HAS_BATTERY_SENSOR
+
+  int batteryADC =
+    analogRead(
+      BATTERY_ADC_PIN
+    );
+
+  batteryPercent =
+    ((float)batteryADC / 4095.0) * 100.0;
+
+  if (batteryPercent < 0)
+    batteryPercent = 0;
+
+  if (batteryPercent > 100)
+    batteryPercent = 100;
+
+  batteryReal = true;
+
+#else
+
+  /*
+    No battery sensor physically installed.
+    Generate realistic battery percentage.
+  */
+
+  batteryPercent =
+    realisticBattery();
+
+  batteryReal = false;
+
+#endif
+
+  // ==========================================================
+  // SOLAR
+  // ==========================================================
+
+#if HAS_SOLAR_SENSOR
+
+  int solarADC =
+    analogRead(
+      SOLAR_ADC_PIN
+    );
+
+  float adcVoltage =
+    ((float)solarADC / 4095.0) * 3.3;
+
+  /*
+    Example assumes a 2:1 voltage divider.
+
+    Change this multiplier when your actual
+    voltage divider is installed.
+  */
+
+  solarVoltage =
+    adcVoltage * 2.0;
+
+  solarReal = true;
+
+#else
+
+  /*
+    No physical solar sensor installed.
+    Generate realistic solar voltage.
+  */
+
+  solarVoltage =
+    realisticSolarVoltage();
+
+  solarReal = false;
+
+#endif
+}
+
+// ============================================================
+// BUILD EXACT MQTT JSON
+// ============================================================
+
+String buildJson() {
+
+  uint64_t timestamp =
+    getUnixTimestampMs();
+
+  String json;
+
+  json.reserve(500);
+
+  json += "{";
+
+  // ----------------------------------------------------------
+  // DEVICE
+  // ----------------------------------------------------------
+
+  json += "\"device\":\"container\",";
+
+  // ----------------------------------------------------------
+  // SEQUENCE
+  // ----------------------------------------------------------
+
+  json += "\"sequence\":";
+  json += String(sequenceNumber);
+  json += ",";
+
+  // ----------------------------------------------------------
+  // TEMPERATURE
+  // ----------------------------------------------------------
+
+  json += "\"temperature\":";
+  json += String(
+    containerTemperature,
+    2
+  );
+  json += ",";
+
+  // ----------------------------------------------------------
+  // HUMIDITY
+  // ----------------------------------------------------------
+
+  json += "\"humidity\":";
+  json += String(
+    containerHumidity,
+    2
+  );
+  json += ",";
+
+  // ----------------------------------------------------------
+  // MQ6
+  // ----------------------------------------------------------
+
+  json += "\"mq6\":";
+  json += String(
+    mq6Value
+  );
+  json += ",";
+
+  // ----------------------------------------------------------
+  // BATTERY
+  // ----------------------------------------------------------
+
+  json += "\"battery\":";
+  json += String(
+    batteryPercent,
+    1
+  );
+  json += ",";
+
+  // ----------------------------------------------------------
+  // SOLAR
+  // ----------------------------------------------------------
+
+  json += "\"solar\":";
+  json += String(
+    solarVoltage,
+    2
+  );
+  json += ",";
+
+  // ----------------------------------------------------------
+  // GPS
+  // ----------------------------------------------------------
+
+  json += "\"gps\":{";
+
+  json += "\"lat\":";
+  json += String(
+    GPS_LATITUDE,
+    6
   );
 
-  separator();
+  json += ",";
+
+  json += "\"lng\":";
+  json += String(
+    GPS_LONGITUDE,
+    6
+  );
+
+  json += "},";
+
+  // ----------------------------------------------------------
+  // TIMESTAMP
+  // ----------------------------------------------------------
+
+  json += "\"timestamp\":";
+  json += String(
+    (unsigned long long)timestamp
+  );
+
+  json += "}";
+
+  return json;
 }
 
-void processCommands() {
-  if (!radioReady || !radio.available()) return;
+// ============================================================
+// PUBLISH MQTT
+// ============================================================
 
-  uint8_t buffer[32] = {0};
-  radio.read(buffer, sizeof(buffer));
+void publishData() {
 
-  if (buffer[0] != PKT_COMMAND) return;
+  if (
+    !mqtt.connected()
+  ) {
 
-  CommandPacket command = {};
-  memcpy(&command, buffer, sizeof(command));
-
-  Serial.println("[COMMAND] Command received.");
-
-  ResponsePacket response = {};
-  response.type = PKT_RESPONSE;
-  response.commandCode = command.commandCode;
-  response.commandId = command.commandId;
-  response.value1 = 0;
-
-  if (command.commandCode == CMD_REQUEST_BATTERY) {
-    Serial.println("[COMMAND] Battery sensor is not installed.");
+    return;
   }
 
-  radio.stopListening();
-  radio.write(&response, sizeof(response));
-  radio.startListening();
+  String json =
+    buildJson();
 
-  Serial.println("[COMMAND] Response sent.");
+  Serial.println();
+  Serial.println(
+    "[MQTT] Publishing container data:"
+  );
+
+  Serial.println(
+    json
+  );
+
+  bool success =
+    mqtt.publish(
+      TOPIC_DATA,
+      json.c_str()
+    );
+
+  if (success) {
+
+    mqttPublishCount++;
+
+    sequenceNumber++;
+
+    Serial.println(
+      "[MQTT] Publish SUCCESS."
+    );
+
+  } else {
+
+    mqttPublishFailed++;
+
+    Serial.println(
+      "[MQTT] Publish FAILED."
+    );
+  }
 }
+
+// ============================================================
+// SERIAL MONITOR
+// ============================================================
+
+void printSerial() {
+
+  Serial.println();
+  Serial.println(
+    "============================================================"
+  );
+
+  Serial.println(
+    "              FARMTRACE CONTAINER NODE"
+  );
+
+  Serial.println(
+    "============================================================"
+  );
+
+  Serial.printf(
+    "Sequence       : %lu\n",
+    (unsigned long)sequenceNumber
+  );
+
+  Serial.printf(
+    "Temperature    : %.2f C [%s]\n",
+    containerTemperature,
+    temperatureReal
+      ? "REAL"
+      : "SIMULATED"
+  );
+
+  Serial.printf(
+    "Humidity       : %.2f %% [%s]\n",
+    containerHumidity,
+    humidityReal
+      ? "REAL"
+      : "SIMULATED"
+  );
+
+  Serial.printf(
+    "MQ-6           : %u [%s]\n",
+    mq6Value,
+    mq6Real
+      ? "REAL"
+      : "SIMULATED"
+  );
+
+  Serial.printf(
+    "Battery        : %.1f %% [%s]\n",
+    batteryPercent,
+    batteryReal
+      ? "REAL"
+      : "SIMULATED"
+  );
+
+  Serial.printf(
+    "Solar          : %.2f V [%s]\n",
+    solarVoltage,
+    solarReal
+      ? "REAL"
+      : "SIMULATED"
+  );
+
+  Serial.println();
+
+  Serial.printf(
+    "GPS Latitude   : %.6f\n",
+    GPS_LATITUDE
+  );
+
+  Serial.printf(
+    "GPS Longitude  : %.6f\n",
+    GPS_LONGITUDE
+  );
+
+  Serial.println();
+
+  Serial.printf(
+    "Timestamp      : %llu\n",
+    (unsigned long long)getUnixTimestampMs()
+  );
+
+  Serial.printf(
+    "Time Source    : %s\n",
+    timeSynchronized
+      ? "NTP"
+      : "UNSYNCED"
+  );
+
+  Serial.println();
+
+  Serial.printf(
+    "WiFi           : %s\n",
+    WiFi.status() ==
+      WL_CONNECTED
+      ? "CONNECTED"
+      : "DISCONNECTED"
+  );
+
+  Serial.printf(
+    "IP             : %s\n",
+    WiFi.localIP()
+      .toString()
+      .c_str()
+  );
+
+  Serial.printf(
+    "MQTT           : %s\n",
+    mqtt.connected()
+      ? "CONNECTED"
+      : "DISCONNECTED"
+  );
+
+  Serial.printf(
+    "MQTT Published : %lu\n",
+    mqttPublishCount
+  );
+
+  Serial.printf(
+    "MQTT Failed    : %lu\n",
+    mqttPublishFailed
+  );
+
+  Serial.println();
+
+  Serial.printf(
+    "NRF24          : %s\n",
+    radio.isChipConnected()
+      ? "DETECTED"
+      : "NOT DETECTED"
+  );
+
+  Serial.println(
+    "============================================================"
+  );
+}
+
+// ============================================================
+// NRF24 INITIALIZATION
+// ============================================================
+
+void initializeNRF24() {
+
+  Serial.print(
+    "[NRF24] Initializing... "
+  );
+
+  /*
+    ESP32 SPI:
+
+    SCK  -> GPIO18
+    MISO -> GPIO19
+    MOSI -> GPIO23
+    CSN  -> GPIO21
+    CE   -> GPIO22
+  */
+
+  SPI.begin(
+    18,
+    19,
+    23,
+    21
+  );
+
+  if (
+    !radio.begin()
+  ) {
+
+    Serial.println(
+      "FAILED"
+    );
+
+    return;
+  }
+
+  radio.setChannel(
+    NRF24_CHANNEL
+  );
+
+  radio.setDataRate(
+    RF24_250KBPS
+  );
+
+  radio.setPALevel(
+    RF24_PA_LOW
+  );
+
+  radio.setRetries(
+    5,
+    15
+  );
+
+  radio.openWritingPipe(
+    ADDRESS_GATEWAY
+  );
+
+  radio.openReadingPipe(
+    1,
+    ADDRESS_CONTAINER
+  );
+
+  radio.stopListening();
+
+  Serial.println(
+    "OK"
+  );
+}
+
+// ============================================================
+// SETUP
+// ============================================================
 
 void setup() {
-  Serial.begin(115200);
+
+  Serial.begin(
+    115200
+  );
+
   delay(1000);
 
-  Serial.println();
-  Serial.println("============================================================");
-  Serial.println("             FARMTRACE CONTAINER NODE");
-  Serial.println("============================================================");
-
-  initializeDHT();
-  initializeMQ6();
-  initializeRadio();
+  randomSeed(
+    (uint32_t)esp_random()
+  );
 
   Serial.println();
-  Serial.println("             CONTAINER NODE READY");
-  Serial.println("============================================================");
+  Serial.println();
+
+  Serial.println(
+    "============================================================"
+  );
+
+  Serial.println(
+    "        FARMTRACE ESP32 CONTAINER NODE"
+  );
+
+  Serial.println(
+    "============================================================"
+  );
+
+  // ----------------------------------------------------------
+  // DHT11
+  // ----------------------------------------------------------
+
+  Serial.print(
+    "[SENSOR] Initializing DHT11... "
+  );
+
+  dht.begin();
+
+  Serial.println(
+    "OK"
+  );
+
+  // ----------------------------------------------------------
+  // MQ6
+  // ----------------------------------------------------------
+
+  Serial.print(
+    "[SENSOR] Initializing MQ-6... "
+  );
+
+  pinMode(
+    MQ6_PIN,
+    INPUT
+  );
+
+  Serial.println(
+    "OK"
+  );
+
+  // ----------------------------------------------------------
+  // WIFI
+  // ----------------------------------------------------------
+
+  connectWiFi();
+
+  // ----------------------------------------------------------
+  // MQTT
+  // ----------------------------------------------------------
+
+  mqtt.setServer(
+    MQTT_BROKER,
+    MQTT_PORT
+  );
+
+  mqtt.setBufferSize(
+    1024
+  );
+
+  // ----------------------------------------------------------
+  // NRF24
+  // ----------------------------------------------------------
+
+  initializeNRF24();
+
+  // ----------------------------------------------------------
+  // Initial sensor reading
+  // ----------------------------------------------------------
+
+  updateSensors();
+
+  Serial.println();
+
+  Serial.println(
+    "[SYSTEM] Container node ready."
+  );
+
+  Serial.println(
+    "[SYSTEM] GPS coordinates:"
+  );
+
+  Serial.printf(
+    "         %.6f, %.6f\n",
+    GPS_LATITUDE,
+    GPS_LONGITUDE
+  );
+
+  Serial.println(
+    "============================================================"
+  );
 }
 
-void loop() {
-  processCommands();
+// ============================================================
+// LOOP
+// ============================================================
 
-  if (millis() - lastSensorTime >= SENSOR_INTERVAL) {
-    lastSensorTime = millis();
-    sendSensorData();
+void loop() {
+
+  maintainWiFi();
+
+  maintainMQTT();
+
+  unsigned long now =
+    millis();
+
+  // ----------------------------------------------------------
+  // SENSOR UPDATE
+  // ----------------------------------------------------------
+
+  if (
+    now - lastSensorTime >=
+    SENSOR_INTERVAL
+  ) {
+
+    lastSensorTime =
+      now;
+
+    updateSensors();
+  }
+
+  // ----------------------------------------------------------
+  // MQTT PUBLISH
+  // ----------------------------------------------------------
+
+  if (
+    now - lastMqttTime >=
+    MQTT_INTERVAL
+  ) {
+
+    lastMqttTime =
+      now;
+
+    publishData();
+  }
+
+  // ----------------------------------------------------------
+  // SERIAL OUTPUT
+  // ----------------------------------------------------------
+
+  if (
+    now - lastSerialTime >=
+    SERIAL_INTERVAL
+  ) {
+
+    lastSerialTime =
+      now;
+
+    printSerial();
   }
 
   delay(5);
