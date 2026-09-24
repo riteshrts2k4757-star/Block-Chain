@@ -8,36 +8,37 @@ export function NetworkDiagram({ driverStatus = 'online', containerStatus = 'onl
 
   const Node = ({ title, icon: Icon, active, color }) => (
     <div style={{
-      display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px',
-      padding: '20px 16px', background: 'rgba(255,255,255,0.7)',
-      backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)',
-      border: `1px solid ${active ? color : 'rgba(255,255,255,0.4)'}`,
-      borderRadius: '20px', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.05)',
-      width: '180px', zIndex: 2, position: 'relative',
-      transition: 'transform 0.2s', cursor: 'default'
+      display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '14px',
+      padding: '24px 20px', background: 'rgba(255,255,255,0.85)',
+      backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
+      border: `2px solid ${active ? color : 'rgba(0,0,0,0.05)'}`,
+      borderRadius: '24px', boxShadow: active ? `0 12px 30px -10px ${color}40` : '0 10px 25px -5px rgba(0,0,0,0.05)',
+      width: '200px', zIndex: 2, position: 'relative',
+      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)', cursor: 'default'
     }}
-    onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-4px)'}
-    onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+    onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-6px)'; e.currentTarget.style.boxShadow = active ? `0 16px 40px -10px ${color}60` : '0 16px 30px -5px rgba(0,0,0,0.1)'; }}
+    onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = active ? `0 12px 30px -10px ${color}40` : '0 10px 25px -5px rgba(0,0,0,0.05)'; }}
     >
       <div style={{
-        width: 56, height: 56, borderRadius: '16px',
+        width: 64, height: 64, borderRadius: '20px',
         background: active ? `${color}15` : 'rgba(0,0,0,0.05)',
         color: active ? color : 'var(--text-tertiary)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        boxShadow: active ? `inset 0 0 10px ${color}30` : 'none'
+        boxShadow: active ? `inset 0 0 0 2px ${color}30` : 'none',
+        transition: 'all 0.3s'
       }}>
-        <Icon size={28} />
+        <Icon size={32} />
       </div>
-      <div style={{ fontSize: '0.9rem', fontWeight: 800, textAlign: 'center', color: 'var(--text-primary)' }}>{title}</div>
-      <div style={{ fontSize: '0.75rem', color: active ? 'var(--success)' : 'var(--danger)', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '6px', background: active ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)', padding: '4px 10px', borderRadius: '12px' }}>
-        <span style={{ width: 8, height: 8, borderRadius: '50%', background: active ? 'var(--success)' : 'var(--danger)', boxShadow: active ? '0 0 8px var(--success)' : '0 0 8px var(--danger)' }} />
+      <div style={{ fontSize: '0.95rem', fontWeight: 800, textAlign: 'center', color: 'var(--text-primary)', letterSpacing: '-0.3px' }}>{title}</div>
+      <div style={{ fontSize: '0.75rem', color: active ? 'var(--success)' : 'var(--danger)', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '6px', background: active ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)', padding: '6px 14px', borderRadius: '20px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+        <span style={{ width: 8, height: 8, borderRadius: '50%', background: active ? 'var(--success)' : 'var(--danger)', boxShadow: active ? '0 0 10px var(--success)' : '0 0 10px var(--danger)' }} />
         {active ? 'ONLINE' : 'OFFLINE'}
       </div>
     </div>
   );
 
   return (
-    <div style={{ position: 'relative', padding: '60px 20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '60px', background: 'rgba(255,255,255,0.4)', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.6)', backdropFilter: 'blur(8px)' }}>
+    <div style={{ position: 'relative', padding: '60px 20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '80px', background: 'linear-gradient(135deg, rgba(255,255,255,0.7) 0%, rgba(255,255,255,0.4) 100%)', borderRadius: '30px', border: '1px solid rgba(255,255,255,0.8)', backdropFilter: 'blur(12px)', boxShadow: '0 20px 40px -20px rgba(0,0,0,0.05)' }}>
       {/* Top row: Devices */}
       <div style={{ display: 'flex', gap: '120px', width: '100%', justifyContent: 'center', position: 'relative', zIndex: 2 }}>
         <Node title="Driver Node (ESP8266)" icon={Cpu} active={isDriverOnline} color="var(--info)" />
@@ -48,27 +49,31 @@ export function NetworkDiagram({ driverStatus = 'online', containerStatus = 'onl
       <div style={{ display: 'flex', justifyContent: 'center', width: '100%', position: 'relative', zIndex: 2 }}>
         <Node title="Cloud MQTT Broker" icon={Server} active={isMqttConnected} color="var(--primary)" />
         
-        {/* CSS Connection Lines */}
-        <div style={{ position: 'absolute', top: '-60px', left: '50%', transform: 'translateX(-50%)', width: '300px', height: '60px', zIndex: 1, pointerEvents: 'none' }}>
-           {/* Left Line (Driver to Broker) */}
-           <div className={isDriverOnline && isMqttConnected ? 'anim-flow-border' : ''} style={{ position: 'absolute', bottom: '0', left: '0', width: '50%', height: '100%', borderLeft: `2px dashed ${isDriverOnline && isMqttConnected ? 'var(--info)' : 'rgba(0,0,0,0.1)'}`, borderBottom: `2px dashed ${isDriverOnline && isMqttConnected ? 'var(--info)' : 'rgba(0,0,0,0.1)'}`, borderBottomLeftRadius: '24px' }}></div>
-           {/* Right Line (Container to Broker) */}
-           <div className={isContainerOnline && isMqttConnected ? 'anim-flow-border-reverse' : ''} style={{ position: 'absolute', bottom: '0', right: '0', width: '50%', height: '100%', borderRight: `2px dashed ${isContainerOnline && isMqttConnected ? 'var(--info)' : 'rgba(0,0,0,0.1)'}`, borderBottom: `2px dashed ${isContainerOnline && isMqttConnected ? 'var(--info)' : 'rgba(0,0,0,0.1)'}`, borderBottomRightRadius: '24px' }}></div>
+        {/* SVG Connection Lines for Devices -> Broker */}
+        <div style={{ position: 'absolute', top: '-80px', left: '50%', transform: 'translateX(-50%)', width: '320px', height: '80px', zIndex: 1, pointerEvents: 'none' }}>
+           <svg width="100%" height="100%" viewBox="0 0 320 80" preserveAspectRatio="none">
+             <path d="M 0,0 C 0,45 160,35 160,80" fill="none" stroke={isDriverOnline && isMqttConnected ? "var(--info)" : "rgba(0,0,0,0.1)"} strokeWidth="4" strokeDasharray="10 10" className={isDriverOnline && isMqttConnected ? "data-flow-svg" : ""} />
+             <path d="M 320,0 C 320,45 160,35 160,80" fill="none" stroke={isContainerOnline && isMqttConnected ? "var(--info)" : "rgba(0,0,0,0.1)"} strokeWidth="4" strokeDasharray="10 10" className={isContainerOnline && isMqttConnected ? "data-flow-svg" : ""} />
+           </svg>
         </div>
       </div>
 
       {/* Bottom row: Backend */}
       <div style={{ display: 'flex', justifyContent: 'center', width: '100%', position: 'relative', zIndex: 2 }}>
         <Node title="FarmTrace Backend" icon={ShieldCheck} active={true} color="var(--primary-dark)" />
-        <div className="anim-flow-border-vertical" style={{ position: 'absolute', top: '-60px', left: '50%', width: '2px', height: '60px', borderLeft: '2px dashed var(--primary)', zIndex: 1 }}></div>
+        
+        {/* SVG Connection Line for Broker -> Backend */}
+        <div style={{ position: 'absolute', top: '-80px', left: '50%', transform: 'translateX(-50%)', width: '20px', height: '80px', zIndex: 1, pointerEvents: 'none' }}>
+           <svg width="100%" height="100%" viewBox="0 0 20 80">
+             <line x1="10" y1="0" x2="10" y2="80" stroke="var(--primary)" strokeWidth="4" strokeDasharray="10 10" className="data-flow-svg-vert" />
+           </svg>
+        </div>
       </div>
 
       <style>{`
-        @keyframes flowBorder { 0% { border-color: rgba(59, 130, 246, 0.2); } 50% { border-color: rgba(59, 130, 246, 1); } 100% { border-color: rgba(59, 130, 246, 0.2); } }
-        @keyframes flowBorderVert { 0% { border-color: rgba(16, 185, 129, 0.2); } 50% { border-color: rgba(16, 185, 129, 1); } 100% { border-color: rgba(16, 185, 129, 0.2); } }
-        .anim-flow-border { animation: flowBorder 2s ease-in-out infinite; }
-        .anim-flow-border-reverse { animation: flowBorder 2s ease-in-out infinite 1s; }
-        .anim-flow-border-vertical { animation: flowBorderVert 1.5s ease-in-out infinite; }
+        @keyframes svgDashFlow { from { stroke-dashoffset: 40; } to { stroke-dashoffset: 0; } }
+        .data-flow-svg { animation: svgDashFlow 1.2s linear infinite; stroke-linecap: round; opacity: 0.8; }
+        .data-flow-svg-vert { animation: svgDashFlow 1s linear infinite; stroke-linecap: round; opacity: 0.8; }
       `}</style>
     </div>
   );

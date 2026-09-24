@@ -31,8 +31,13 @@ const connectMQTT = (io) => {
 
   client.on('message', async (topic, message) => {
     try {
-      const data = JSON.parse(message.toString());
-      // console.log(`Received telemetry on ${topic}`);
+      let data;
+      const rawString = message.toString();
+      try {
+        data = JSON.parse(rawString);
+      } catch (err) {
+        data = { status: rawString };
+      }
 
       // Emit to Socket.io clients
       if (io) {
@@ -58,7 +63,7 @@ const connectMQTT = (io) => {
         deviceId: deviceType === 'driver' ? 'DRV001' : 'CONT001',
         containerId: data.containerId || 'CONT001',
         shipmentId: data.shipmentId || 'SHIP001',
-        sequence: data.sequence,
+        sequence: data.sequence || Math.floor(Math.random() * 1000000000),
         timestamp: data.timestamp ? new Date(data.timestamp) : new Date(),
         temperature: data.temperature,
         humidity: data.humidity,
