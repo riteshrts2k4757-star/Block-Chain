@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { LayoutDashboard, Route, Clock, AlertTriangle, User, LogOut, Menu, X, Leaf, Bell } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { useAlerts } from '../context/AlertContext';
-import { NotificationPanel } from '../components/common/NotificationPanel';
+import { DriverNotificationPanel } from '../components/driver/DriverNotificationPanel';
+import { driverPortalService } from '../services/driverPortal';
 
 const driverNavItems = [
   { path: '/driver/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -16,8 +16,8 @@ const driverNavItems = [
 export default function DriverLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
   const { user, logout } = useAuth();
-  const { driverAlerts } = useAlerts();
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -25,13 +25,11 @@ export default function DriverLayout() {
     navigate('/login');
   };
 
-  const unreadCount = driverAlerts.length;
-
   return (
     <div className="app-shell driver-shell">
       {/* Mobile overlay */}
       {sidebarOpen && (
-        <div
+        <div 
           style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 35, backdropFilter: 'blur(2px)' }}
           onClick={() => setSidebarOpen(false)}
         />
@@ -82,7 +80,7 @@ export default function DriverLayout() {
               <div style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)' }}>{user?.truckId}</div>
             </div>
           </div>
-
+          
           <button onClick={handleLogout} className="btn" style={{ width: '100%', background: 'var(--danger-bg)', border: '1px solid var(--danger-border)', color: 'var(--danger)' }}>
             <LogOut size={16} /> Logout
           </button>
@@ -102,8 +100,8 @@ export default function DriverLayout() {
           </div>
 
           <div className="top-bar-right" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-            <button
-              className="notification-btn"
+            <button 
+              className="notification-btn" 
               onClick={() => setNotificationsOpen(true)}
               style={{ position: 'relative', background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', padding: '8px' }}
             >
@@ -114,9 +112,9 @@ export default function DriverLayout() {
                 </span>
               )}
             </button>
-            <button
-              onClick={handleLogout}
-              className="btn btn-outline"
+            <button 
+              onClick={handleLogout} 
+              className="btn btn-outline" 
               style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 12px', fontSize: '0.875rem' }}
             >
               <LogOut size={16} /> Log Out
@@ -129,7 +127,7 @@ export default function DriverLayout() {
         </main>
       </div>
 
-      <NotificationPanel isOpen={notificationsOpen} onClose={() => setNotificationsOpen(false)} />
+      <DriverNotificationPanel isOpen={notificationsOpen} onClose={() => setNotificationsOpen(false)} onCountUpdate={setUnreadCount} />
     </div>
   );
 }
