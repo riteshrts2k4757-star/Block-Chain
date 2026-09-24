@@ -216,7 +216,7 @@ export const DriverLogbook = () => {
                   {entry.eventType}
                 </div>
                 <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginTop: '4px' }}>
-                  Trip: {entry.tripId} {entry.duration ? \` • \${entry.duration} mins\` : ''}
+                  Trip: {entry.tripId} {entry.duration ? ` • ${entry.duration} mins` : ''}
                 </div>
                 {entry.notes && <div style={{ fontSize: '0.875rem', color: 'var(--text-tertiary)', marginTop: '4px', fontStyle: 'italic' }}>"{entry.notes}"</div>}
               </div>

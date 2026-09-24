@@ -55,7 +55,7 @@ export default function DriverDashboard() {
       <div className="card" style={{ background: 'linear-gradient(135deg, var(--info-dark), var(--info))', color: 'white', padding: '24px', marginBottom: '24px', borderRadius: 'var(--radius-lg)' }}>
         <h1 style={{ fontSize: '1.5rem', fontWeight: 800, margin: '0 0 8px 0' }}>Welcome, {driver?.name || user?.name}</h1>
         <p style={{ margin: 0, opacity: 0.9 }}>
-          {currentTrip ? \`Trip \${currentTrip.shipmentId} • \${currentTrip.containerId}\` : 'No active trip assigned.'}
+          {currentTrip ? `Trip ${currentTrip.shipmentId} • ${currentTrip.containerId}` : 'No active trip assigned.'}
         </p>
       </div>
 
@@ -102,7 +102,7 @@ export default function DriverDashboard() {
                 ETA: {currentTrip.estimatedArrival ? new Date(currentTrip.estimatedArrival).toLocaleString() : 'Calculating...'}
               </div>
             </div>
-            <button className="btn btn-primary" onClick={() => window.open(\`https://www.google.com/maps/dir/?api=1&destination=\${encodeURIComponent(currentTrip.destination)}\`, '_blank')}>
+            <button className="btn btn-primary" onClick={() => window.open(`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(currentTrip.destination)}`, '_blank')}>
               Navigate
             </button>
           </div>
