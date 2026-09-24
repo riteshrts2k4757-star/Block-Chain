@@ -3,7 +3,7 @@ const SensorRecord = require('../models/SensorRecord');
 
 let client;
 
-const connectMQTT = () => {
+const connectMQTT = (io) => {
   const brokerUrl = process.env.MQTT_BROKER || 'mqtt://broker.emqx.io:1883';
   
   console.log(`Connecting to MQTT broker: ${brokerUrl}`);
@@ -22,12 +22,31 @@ const connectMQTT = () => {
         console.error('MQTT Subscription Error:', err);
       }
     });
+    client.subscribe('farmtrace/+/status', (err) => {
+      if (!err) {
+        console.log('Subscribed to farmtrace/+/status');
+      }
+    });
   });
 
   client.on('message', async (topic, message) => {
     try {
       const data = JSON.parse(message.toString());
       // console.log(`Received telemetry on ${topic}`);
+
+      // Emit to Socket.io clients
+      if (io) {
+        if (topic.endsWith('driver/data')) {
+          io.emit('farmtrace:driver:data', data);
+        } else if (topic.endsWith('container/data')) {
+          io.emit('farmtrace:container:data', data);
+        } else if (topic.endsWith('status')) {
+          io.emit('farmtrace:status', data);
+        }
+      }
+
+      // Ignore status messages for DB insertion (or add logic if needed)
+      if (topic.endsWith('status')) return;
 
       // Extract deviceType from topic: farmtrace/{deviceType}/data
       const parts = topic.split('/');
