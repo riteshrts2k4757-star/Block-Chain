@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { LayoutDashboard, Route, Clock, AlertTriangle, User, LogOut, Menu, X, Leaf, Bell } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { useAlerts } from '../context/AlertContext';
-import { NotificationPanel } from '../components/common/NotificationPanel';
+import { DriverNotificationPanel } from '../components/driver/DriverNotificationPanel';
+import { driverPortalService } from '../services/driverPortal';
 
 const driverNavItems = [
   { path: '/driver/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -16,16 +16,14 @@ const driverNavItems = [
 export default function DriverLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
   const { user, logout } = useAuth();
-  const { driverAlerts } = useAlerts();
   const navigate = useNavigate();
 
   const handleLogout = () => {
     logout();
     navigate('/login');
   };
-
-  const unreadCount = driverAlerts.length;
 
   return (
     <div className="app-shell driver-shell">
@@ -129,7 +127,7 @@ export default function DriverLayout() {
         </main>
       </div>
 
-      <NotificationPanel isOpen={notificationsOpen} onClose={() => setNotificationsOpen(false)} />
+      <DriverNotificationPanel isOpen={notificationsOpen} onClose={() => setNotificationsOpen(false)} onCountUpdate={setUnreadCount} />
     </div>
   );
 }
