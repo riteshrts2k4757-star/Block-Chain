@@ -1,7 +1,7 @@
 import { io } from 'socket.io-client';
 import { queueCommand } from './api';
 
-const SOCKET_URL = 'http://localhost:3000';
+import { SOCKET_URL } from '../config';
 let socket = null;
 const listeners = new Set();
 

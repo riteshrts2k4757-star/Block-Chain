@@ -41,7 +41,7 @@ const ProtectedRoute = ({ children, allowedRole }) => {
   const { user, isAuthenticated } = useAuth();
   if (!isAuthenticated) return <Navigate to="/login" replace />;
   if (allowedRole && user.role !== allowedRole) {
-    return <Navigate to={user.role === 'admin' ? '/admin/dashboard' : '/driver/dashboard'} replace />;
+    return <Navigate to={user.role === 'admin' ? '/admin/telemetry' : '/driver/dashboard'} replace />;
   }
   return children;
 };
@@ -55,7 +55,7 @@ export default function App() {
 
       {/* Admin Routes */}
       <Route path="/admin" element={<ProtectedRoute allowedRole="admin"><AdminLayout /></ProtectedRoute>}>
-        <Route index element={<Navigate to="dashboard" replace />} />
+        <Route index element={<Navigate to="telemetry" replace />} />
         <Route path="dashboard" element={<AdminDashboard />} />
         <Route path="fleet" element={<Fleet />} />
         <Route path="fleet/:id" element={<DriverDetails />} />
