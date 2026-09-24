@@ -2,7 +2,6 @@
 
 **FarmTrace** is an advanced, real-time IoT and telemetry dashboard designed for monitoring agricultural logistics, secure container transport, and driver safety. Built for the Smart India Hackathon (SIH), this system ensures end-to-end visibility and data integrity.
 
-![FarmTrace Dashboard](Web_DashBoard/frontend/public/farmtrace_bg.jpg)
 
 ## 🌟 Key Features
 
