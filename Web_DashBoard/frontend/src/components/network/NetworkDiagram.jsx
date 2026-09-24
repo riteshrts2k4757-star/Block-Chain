@@ -8,39 +8,39 @@ export function NetworkDiagram({ driverStatus = 'online', containerStatus = 'onl
 
   const Node = ({ title, icon: Icon, active, color }) => (
     <div style={{
-      display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '14px',
-      padding: '24px 20px', background: 'rgba(255,255,255,0.85)',
+      display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px',
+      padding: '16px 12px', background: 'rgba(255,255,255,0.85)',
       backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
       border: `2px solid ${active ? color : 'rgba(0,0,0,0.05)'}`,
-      borderRadius: '24px', boxShadow: active ? `0 12px 30px -10px ${color}40` : '0 10px 25px -5px rgba(0,0,0,0.05)',
-      width: '200px', zIndex: 2, position: 'relative',
+      borderRadius: '20px', boxShadow: active ? `0 8px 20px -8px ${color}40` : '0 8px 20px -5px rgba(0,0,0,0.05)',
+      width: '160px', zIndex: 2, position: 'relative',
       transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)', cursor: 'default'
     }}
     onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-6px)'; e.currentTarget.style.boxShadow = active ? `0 16px 40px -10px ${color}60` : '0 16px 30px -5px rgba(0,0,0,0.1)'; }}
     onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = active ? `0 12px 30px -10px ${color}40` : '0 10px 25px -5px rgba(0,0,0,0.05)'; }}
     >
       <div style={{
-        width: 64, height: 64, borderRadius: '20px',
+        width: 48, height: 48, borderRadius: '16px',
         background: active ? `${color}15` : 'rgba(0,0,0,0.05)',
         color: active ? color : 'var(--text-tertiary)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         boxShadow: active ? `inset 0 0 0 2px ${color}30` : 'none',
         transition: 'all 0.3s'
       }}>
-        <Icon size={32} />
+        <Icon size={24} />
       </div>
-      <div style={{ fontSize: '0.95rem', fontWeight: 800, textAlign: 'center', color: 'var(--text-primary)', letterSpacing: '-0.3px' }}>{title}</div>
-      <div style={{ fontSize: '0.75rem', color: active ? 'var(--success)' : 'var(--danger)', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '6px', background: active ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)', padding: '6px 14px', borderRadius: '20px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-        <span style={{ width: 8, height: 8, borderRadius: '50%', background: active ? 'var(--success)' : 'var(--danger)', boxShadow: active ? '0 0 10px var(--success)' : '0 0 10px var(--danger)' }} />
+      <div style={{ fontSize: '0.8rem', fontWeight: 800, textAlign: 'center', color: 'var(--text-primary)', letterSpacing: '-0.2px' }}>{title}</div>
+      <div style={{ fontSize: '0.65rem', color: active ? 'var(--success)' : 'var(--danger)', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '4px', background: active ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)', padding: '4px 10px', borderRadius: '16px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+        <span style={{ width: 6, height: 6, borderRadius: '50%', background: active ? 'var(--success)' : 'var(--danger)', boxShadow: active ? '0 0 8px var(--success)' : '0 0 8px var(--danger)' }} />
         {active ? 'ONLINE' : 'OFFLINE'}
       </div>
     </div>
   );
 
   return (
-    <div style={{ position: 'relative', padding: '60px 20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '80px', background: 'linear-gradient(135deg, rgba(255,255,255,0.7) 0%, rgba(255,255,255,0.4) 100%)', borderRadius: '30px', border: '1px solid rgba(255,255,255,0.8)', backdropFilter: 'blur(12px)', boxShadow: '0 20px 40px -20px rgba(0,0,0,0.05)' }}>
+    <div style={{ position: 'relative', padding: '30px 20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '50px', background: 'linear-gradient(135deg, rgba(255,255,255,0.7) 0%, rgba(255,255,255,0.4) 100%)', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.8)', backdropFilter: 'blur(12px)', boxShadow: '0 20px 40px -20px rgba(0,0,0,0.05)' }}>
       {/* Top row: Devices */}
-      <div style={{ display: 'flex', gap: '120px', width: '100%', justifyContent: 'center', position: 'relative', zIndex: 2 }}>
+      <div style={{ display: 'flex', gap: '80px', width: '100%', justifyContent: 'center', position: 'relative', zIndex: 2 }}>
         <Node title="Driver Node (ESP8266)" icon={Cpu} active={isDriverOnline} color="var(--info)" />
         <Node title="Container Node (ESP32)" icon={Cpu} active={isContainerOnline} color="var(--info)" />
       </div>
@@ -50,10 +50,10 @@ export function NetworkDiagram({ driverStatus = 'online', containerStatus = 'onl
         <Node title="Cloud MQTT Broker" icon={Server} active={isMqttConnected} color="var(--primary)" />
         
         {/* SVG Connection Lines for Devices -> Broker */}
-        <div style={{ position: 'absolute', top: '-80px', left: '50%', transform: 'translateX(-50%)', width: '320px', height: '80px', zIndex: 1, pointerEvents: 'none' }}>
-           <svg width="100%" height="100%" viewBox="0 0 320 80" preserveAspectRatio="none">
-             <path d="M 0,0 C 0,45 160,35 160,80" fill="none" stroke={isDriverOnline && isMqttConnected ? "var(--info)" : "rgba(0,0,0,0.1)"} strokeWidth="4" strokeDasharray="10 10" className={isDriverOnline && isMqttConnected ? "data-flow-svg" : ""} />
-             <path d="M 320,0 C 320,45 160,35 160,80" fill="none" stroke={isContainerOnline && isMqttConnected ? "var(--info)" : "rgba(0,0,0,0.1)"} strokeWidth="4" strokeDasharray="10 10" className={isContainerOnline && isMqttConnected ? "data-flow-svg" : ""} />
+        <div style={{ position: 'absolute', top: '-50px', left: '50%', transform: 'translateX(-50%)', width: '240px', height: '50px', zIndex: 1, pointerEvents: 'none' }}>
+           <svg width="100%" height="100%" viewBox="0 0 240 50" preserveAspectRatio="none">
+             <path d="M 0,0 C 0,25 120,20 120,50" fill="none" stroke={isDriverOnline && isMqttConnected ? "var(--info)" : "rgba(0,0,0,0.1)"} strokeWidth="3" strokeDasharray="8 8" className={isDriverOnline && isMqttConnected ? "data-flow-svg" : ""} />
+             <path d="M 240,0 C 240,25 120,20 120,50" fill="none" stroke={isContainerOnline && isMqttConnected ? "var(--info)" : "rgba(0,0,0,0.1)"} strokeWidth="3" strokeDasharray="8 8" className={isContainerOnline && isMqttConnected ? "data-flow-svg" : ""} />
            </svg>
         </div>
       </div>
@@ -63,9 +63,9 @@ export function NetworkDiagram({ driverStatus = 'online', containerStatus = 'onl
         <Node title="FarmTrace Backend" icon={ShieldCheck} active={true} color="var(--primary-dark)" />
         
         {/* SVG Connection Line for Broker -> Backend */}
-        <div style={{ position: 'absolute', top: '-80px', left: '50%', transform: 'translateX(-50%)', width: '20px', height: '80px', zIndex: 1, pointerEvents: 'none' }}>
-           <svg width="100%" height="100%" viewBox="0 0 20 80">
-             <line x1="10" y1="0" x2="10" y2="80" stroke="var(--primary)" strokeWidth="4" strokeDasharray="10 10" className="data-flow-svg-vert" />
+        <div style={{ position: 'absolute', top: '-50px', left: '50%', transform: 'translateX(-50%)', width: '20px', height: '50px', zIndex: 1, pointerEvents: 'none' }}>
+           <svg width="100%" height="100%" viewBox="0 0 20 50">
+             <line x1="10" y1="0" x2="10" y2="50" stroke="var(--primary)" strokeWidth="3" strokeDasharray="8 8" className="data-flow-svg-vert" />
            </svg>
         </div>
       </div>
