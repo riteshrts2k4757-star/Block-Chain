@@ -30,8 +30,9 @@ import DriverDetails from './pages/admin/DriverDetails';
 import AlertRules from './pages/admin/AlertRules';
 import LoadConfiguration from './pages/admin/LoadConfiguration';
 import LiveLoadTesting from './pages/admin/LiveLoadTesting';
-import { TelemetryTable, Logbook as AdminLogbook, Devices, Profile as AdminProfile } from './pages/admin/GenericPages';
+import { TelemetryTable, Logbook as AdminLogbook, Profile as AdminProfile } from './pages/admin/GenericPages';
 import LoadTracking from './pages/admin/LoadTracking';
+import IoTDevices from './pages/admin/IoTDevices';
 
 // Driver Pages
 import DriverDashboard from './pages/driver/DriverDashboard';
@@ -80,7 +81,7 @@ export default function App() {
         <Route path="alerts" element={<Alerts />} />
         <Route path="logbook" element={<AdminLogbook />} />
         <Route path="trips" element={<Trips />} />
-        <Route path="devices" element={<Devices />} />
+        <Route path="devices" element={<IoTDevices />} />
         <Route path="settings" element={<Settings />} />
         <Route path="profile" element={<AdminProfile />} />
       </Route>

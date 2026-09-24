@@ -32,7 +32,7 @@ function MapUpdater({ center }) {
 }
 
 export default function LoadTracking() {
-  const { latestTelemetry } = useTelemetry();
+  const { containerData } = useTelemetry();
   
   const [source, setSource] = useState('Manual'); // 'Manual' or 'Live GPS'
   
@@ -137,9 +137,9 @@ export default function LoadTracking() {
 
   useEffect(() => {
     if (source === 'Live GPS') {
-      if (latestTelemetry?.gps?.lat && latestTelemetry?.gps?.lng) {
-          const lat = latestTelemetry.gps.lat;
-          const lng = latestTelemetry.gps.lng;
+      if (containerData?.gps?.lat && containerData?.gps?.lng) {
+          const lat = containerData.gps.lat;
+          const lng = containerData.gps.lng;
           
           if (activeLocation?.lat !== lat || activeLocation?.lng !== lng) {
             setActiveLocation({ lat, lng });
@@ -148,11 +148,11 @@ export default function LoadTracking() {
           }
       }
     }
-  }, [source, latestTelemetry, activeLocation]);
+  }, [source, containerData, activeLocation]);
 
   const getStatus = () => {
     if (generalError || errorLat || errorLng) return { text: 'Invalid coordinates', icon: <AlertTriangle size={16} />, color: 'var(--warning)' };
-    if (source === 'Live GPS' && (!latestTelemetry || !latestTelemetry.gps)) return { text: 'GPS offline', icon: <XCircle size={16} />, color: 'var(--danger)' };
+    if (source === 'Live GPS' && (!containerData || !containerData.gps)) return { text: 'GPS offline', icon: <XCircle size={16} />, color: 'var(--danger)' };
     if (!useLat || !useLng) return { text: 'Waiting for coordinates', icon: <Clock size={16} />, color: 'var(--text-secondary)' };
     return { text: 'Location available', icon: <CheckCircle size={16} />, color: 'var(--success)' };
   };
@@ -263,7 +263,7 @@ export default function LoadTracking() {
 
             {source === 'Live GPS' && (
               <div style={{ padding: '24px', textAlign: 'center', background: 'var(--bg-hover)', borderRadius: 'var(--radius-md)' }}>
-                {latestTelemetry && latestTelemetry.gps ? (
+                {containerData && containerData.gps ? (
                   <div style={{ color: 'var(--success)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', fontWeight: 500 }}>
                     <CheckCircle size={18} /> GPS Connected
                   </div>

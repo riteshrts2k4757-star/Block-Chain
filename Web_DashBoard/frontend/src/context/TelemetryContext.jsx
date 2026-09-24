@@ -49,6 +49,10 @@ function generateSimulatedContainer(prev, overrides = {}) {
     mq6: overrides.mq6 ?? Math.round(smoothValue(base.mq6 || 350, 340 + Math.sin(t / 35) * 30, 0.03)),
     battery: overrides.containerBattery ?? Math.round(smoothValue(base.battery || 87, 85 + Math.sin(t / 180) * 5, 0.01)),
     solar: overrides.containerSolar ?? parseFloat(smoothValue(base.solar || 3.9, 3.8 + Math.sin(t / 120) * 0.3, 0.01).toFixed(1)),
+    gps: {
+      lat: parseFloat(smoothValue(base.gps?.lat || 23.7957, 23.7957 + Math.sin(t / 200) * 0.005, 0.01).toFixed(6)),
+      lng: parseFloat(smoothValue(base.gps?.lng || 86.4304, 86.4304 + Math.cos(t / 200) * 0.005, 0.01).toFixed(6))
+    },
     timestamp: Date.now(),
     simulated: true,
   };
