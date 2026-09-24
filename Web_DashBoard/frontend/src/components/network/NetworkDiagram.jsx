@@ -8,61 +8,67 @@ export function NetworkDiagram({ driverStatus = 'online', containerStatus = 'onl
 
   const Node = ({ title, icon: Icon, active, color }) => (
     <div style={{
-      display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px',
-      padding: '16px', background: 'var(--bg-card)', border: `1px solid ${active ? color : 'var(--border)'}`,
-      borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-sm)',
-      width: '140px', zIndex: 2
-    }}>
+      display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px',
+      padding: '20px 16px', background: 'rgba(255,255,255,0.7)',
+      backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)',
+      border: `1px solid ${active ? color : 'rgba(255,255,255,0.4)'}`,
+      borderRadius: '20px', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.05)',
+      width: '180px', zIndex: 2, position: 'relative',
+      transition: 'transform 0.2s', cursor: 'default'
+    }}
+    onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-4px)'}
+    onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+    >
       <div style={{
-        width: 48, height: 48, borderRadius: '50%',
-        background: active ? `${color}15` : 'var(--bg-hover)',
+        width: 56, height: 56, borderRadius: '16px',
+        background: active ? `${color}15` : 'rgba(0,0,0,0.05)',
         color: active ? color : 'var(--text-tertiary)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center'
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        boxShadow: active ? `inset 0 0 10px ${color}30` : 'none'
       }}>
-        <Icon size={24} />
+        <Icon size={28} />
       </div>
-      <div style={{ fontSize: '0.875rem', fontWeight: 600, textAlign: 'center' }}>{title}</div>
-      <div style={{ fontSize: '0.6875rem', color: active ? 'var(--success)' : 'var(--danger)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
-        <span style={{ width: 6, height: 6, borderRadius: '50%', background: active ? 'var(--success)' : 'var(--danger)' }} />
+      <div style={{ fontSize: '0.9rem', fontWeight: 800, textAlign: 'center', color: 'var(--text-primary)' }}>{title}</div>
+      <div style={{ fontSize: '0.75rem', color: active ? 'var(--success)' : 'var(--danger)', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '6px', background: active ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)', padding: '4px 10px', borderRadius: '12px' }}>
+        <span style={{ width: 8, height: 8, borderRadius: '50%', background: active ? 'var(--success)' : 'var(--danger)', boxShadow: active ? '0 0 8px var(--success)' : '0 0 8px var(--danger)' }} />
         {active ? 'ONLINE' : 'OFFLINE'}
       </div>
     </div>
   );
 
   return (
-    <div style={{ position: 'relative', padding: '40px 20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '40px', background: 'var(--bg-main)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-light)' }}>
+    <div style={{ position: 'relative', padding: '60px 20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '60px', background: 'rgba(255,255,255,0.4)', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.6)', backdropFilter: 'blur(8px)' }}>
       {/* Top row: Devices */}
-      <div style={{ display: 'flex', gap: '80px', width: '100%', justifyContent: 'center', position: 'relative' }}>
+      <div style={{ display: 'flex', gap: '120px', width: '100%', justifyContent: 'center', position: 'relative', zIndex: 2 }}>
         <Node title="Driver Node (ESP8266)" icon={Cpu} active={isDriverOnline} color="var(--info)" />
         <Node title="Container Node (ESP32)" icon={Cpu} active={isContainerOnline} color="var(--info)" />
       </div>
 
       {/* Middle row: Broker */}
-      <div style={{ display: 'flex', justifyContent: 'center', width: '100%', position: 'relative' }}>
-        <Node title="MQTT Broker (Aedes)" icon={Server} active={isMqttConnected} color="var(--primary)" />
+      <div style={{ display: 'flex', justifyContent: 'center', width: '100%', position: 'relative', zIndex: 2 }}>
+        <Node title="Cloud MQTT Broker" icon={Server} active={isMqttConnected} color="var(--primary)" />
         
-        {/* Connection lines using absolute SVG */}
-        <svg viewBox="0 0 100 100" preserveAspectRatio="none" style={{ position: 'absolute', top: -75, left: 0, width: '100%', height: 100, zIndex: 1, pointerEvents: 'none' }}>
-          {/* Driver to Broker */}
-          <path d="M 30 0 Q 30 50, 50 80" fill="none" stroke={isDriverOnline && isMqttConnected ? 'var(--info)' : 'var(--border)'} strokeWidth="2" strokeDasharray={isDriverOnline && isMqttConnected ? '4 4' : 'none'} className={isDriverOnline && isMqttConnected ? 'anim-dash' : ''} />
-          {/* Container to Broker */}
-          <path d="M 70 0 Q 70 50, 50 80" fill="none" stroke={isContainerOnline && isMqttConnected ? 'var(--info)' : 'var(--border)'} strokeWidth="2" strokeDasharray={isContainerOnline && isMqttConnected ? '4 4' : 'none'} className={isContainerOnline && isMqttConnected ? 'anim-dash-reverse' : ''} />
-        </svg>
+        {/* CSS Connection Lines */}
+        <div style={{ position: 'absolute', top: '-60px', left: '50%', transform: 'translateX(-50%)', width: '300px', height: '60px', zIndex: 1, pointerEvents: 'none' }}>
+           {/* Left Line (Driver to Broker) */}
+           <div className={isDriverOnline && isMqttConnected ? 'anim-flow-border' : ''} style={{ position: 'absolute', bottom: '0', left: '0', width: '50%', height: '100%', borderLeft: `2px dashed ${isDriverOnline && isMqttConnected ? 'var(--info)' : 'rgba(0,0,0,0.1)'}`, borderBottom: `2px dashed ${isDriverOnline && isMqttConnected ? 'var(--info)' : 'rgba(0,0,0,0.1)'}`, borderBottomLeftRadius: '24px' }}></div>
+           {/* Right Line (Container to Broker) */}
+           <div className={isContainerOnline && isMqttConnected ? 'anim-flow-border-reverse' : ''} style={{ position: 'absolute', bottom: '0', right: '0', width: '50%', height: '100%', borderRight: `2px dashed ${isContainerOnline && isMqttConnected ? 'var(--info)' : 'rgba(0,0,0,0.1)'}`, borderBottom: `2px dashed ${isContainerOnline && isMqttConnected ? 'var(--info)' : 'rgba(0,0,0,0.1)'}`, borderBottomRightRadius: '24px' }}></div>
+        </div>
       </div>
 
       {/* Bottom row: Backend */}
-      <div style={{ display: 'flex', justifyContent: 'center', width: '100%', position: 'relative' }}>
+      <div style={{ display: 'flex', justifyContent: 'center', width: '100%', position: 'relative', zIndex: 2 }}>
         <Node title="FarmTrace Backend" icon={ShieldCheck} active={true} color="var(--primary-dark)" />
-        <svg viewBox="0 0 100 100" preserveAspectRatio="none" style={{ position: 'absolute', top: -75, left: 0, width: '100%', height: 100, zIndex: 1, pointerEvents: 'none' }}>
-          <path d="M 50 0 L 50 80" fill="none" stroke="var(--primary)" strokeWidth="2" strokeDasharray="4 4" className="anim-dash" />
-        </svg>
+        <div className="anim-flow-border-vertical" style={{ position: 'absolute', top: '-60px', left: '50%', width: '2px', height: '60px', borderLeft: '2px dashed var(--primary)', zIndex: 1 }}></div>
       </div>
 
       <style>{`
-        @keyframes dash { to { stroke-dashoffset: -20; } }
-        @keyframes dash-reverse { to { stroke-dashoffset: 20; } }
-        .anim-dash { animation: dash 1s linear infinite; }
-        .anim-dash-reverse { animation: dash-reverse 1s linear infinite; }
+        @keyframes flowBorder { 0% { border-color: rgba(59, 130, 246, 0.2); } 50% { border-color: rgba(59, 130, 246, 1); } 100% { border-color: rgba(59, 130, 246, 0.2); } }
+        @keyframes flowBorderVert { 0% { border-color: rgba(16, 185, 129, 0.2); } 50% { border-color: rgba(16, 185, 129, 1); } 100% { border-color: rgba(16, 185, 129, 0.2); } }
+        .anim-flow-border { animation: flowBorder 2s ease-in-out infinite; }
+        .anim-flow-border-reverse { animation: flowBorder 2s ease-in-out infinite 1s; }
+        .anim-flow-border-vertical { animation: flowBorderVert 1.5s ease-in-out infinite; }
       `}</style>
     </div>
   );
@@ -70,9 +76,9 @@ export function NetworkDiagram({ driverStatus = 'online', containerStatus = 'onl
 
 export function MQTTActivityStream({ logs }) {
   return (
-    <div style={{ background: '#0F172A', color: '#E2E8F0', borderRadius: 'var(--radius-lg)', padding: '16px', fontFamily: 'monospace', height: '300px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+    <div style={{ background: 'rgba(15, 23, 42, 0.85)', backdropFilter: 'blur(16px)', border: '1px solid rgba(255,255,255,0.1)', color: '#E2E8F0', borderRadius: '20px', padding: '24px', fontFamily: 'monospace', height: '350px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '10px', boxShadow: 'inset 0 0 20px rgba(0,0,0,0.5)' }}>
       {logs.length === 0 ? (
-        <div style={{ textAlign: 'center', color: '#475569', marginTop: '40px' }}>Waiting for MQTT activity...</div>
+        <div style={{ textAlign: 'center', color: '#475569', marginTop: '40px', fontWeight: 600 }}>Waiting for secure cloud connection...</div>
       ) : (
         logs.map(log => {
           let color = '#94A3B8';
@@ -84,9 +90,9 @@ export function MQTTActivityStream({ logs }) {
           if (log.type === 'system') color = '#CBD5E1';
 
           return (
-            <div key={log.id} style={{ display: 'flex', gap: '12px', fontSize: '0.75rem', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '4px' }}>
-              <span style={{ color: '#475569', flexShrink: 0 }}>[{log.time}]</span>
-              <span style={{ color, wordBreak: 'break-all' }}>{log.message}</span>
+            <div key={log.id} style={{ display: 'flex', gap: '16px', fontSize: '0.8rem', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '8px' }}>
+              <span style={{ color: '#64748B', flexShrink: 0, fontWeight: 700 }}>[{log.time}]</span>
+              <span style={{ color, wordBreak: 'break-all', fontWeight: 500 }}>{log.message}</span>
             </div>
           );
         })
