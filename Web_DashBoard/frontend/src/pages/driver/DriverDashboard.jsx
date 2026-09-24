@@ -1,62 +1,18 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { useTelemetry } from '../../context/TelemetryContext';
 import { useAuth } from '../../context/AuthContext';
 import { TelemetryCard } from '../../components/common/TelemetryCard';
-import { Navigation, Thermometer, Droplets, Battery, AlertCircle, Loader } from 'lucide-react';
-import { driverPortalService } from '../../services/driverPortal';
+import { Navigation, Thermometer, Droplets, Battery } from 'lucide-react';
 
 export default function DriverDashboard() {
   const { driverData, containerData } = useTelemetry();
   const { user } = useAuth();
-  
-  const [dashboardData, setDashboardData] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-  useEffect(() => {
-    const fetchDashboard = async () => {
-      try {
-        setLoading(true);
-        const res = await driverPortalService.getDashboard();
-        if (res.success) setDashboardData(res.data);
-      } catch (err) {
-        setError(err.response?.data?.message || err.message || 'Failed to load dashboard data');
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchDashboard();
-  }, []);
-
-  if (loading) {
-    return (
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '60vh', color: 'var(--text-secondary)' }}>
-        <Loader size={40} className="animate-spin mb-16" />
-        <p>Loading your dashboard...</p>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="card" style={{ padding: '24px', textAlign: 'center', color: 'var(--danger)', border: '1px solid var(--danger-border)', background: 'var(--danger-bg)' }}>
-        <AlertCircle size={40} style={{ margin: '0 auto 16px auto' }} />
-        <h2 style={{ fontSize: '1.25rem', marginBottom: '8px' }}>Error Loading Dashboard</h2>
-        <p>{error}</p>
-      </div>
-    );
-  }
-
-  const currentTrip = dashboardData?.currentTrip;
-  const driver = dashboardData?.driver;
 
   return (
     <div>
       <div className="card" style={{ background: 'linear-gradient(135deg, var(--info-dark), var(--info))', color: 'white', padding: '24px', marginBottom: '24px', borderRadius: 'var(--radius-lg)' }}>
-        <h1 style={{ fontSize: '1.5rem', fontWeight: 800, margin: '0 0 8px 0' }}>Welcome, {driver?.name || user?.name}</h1>
-        <p style={{ margin: 0, opacity: 0.9 }}>
-          {currentTrip ? `Trip ${currentTrip.shipmentId} • ${currentTrip.containerId}` : 'No active trip assigned.'}
-        </p>
+        <h1 style={{ fontSize: '1.5rem', fontWeight: 800, margin: '0 0 8px 0' }}>Welcome, {user?.name}</h1>
+        <p style={{ margin: 0, opacity: 0.9 }}>Trip FT-2026-001 • {user?.truckId}</p>
       </div>
 
       <div className="grid grid-2 gap-16 mb-24">
@@ -78,39 +34,29 @@ export default function DriverDashboard() {
 
       <h2 style={{ fontSize: '1.125rem', marginBottom: '16px' }}>Container Status</h2>
       <div className="grid grid-2 gap-16">
-        <TelemetryCard 
-          title="Temperature" 
-          value={containerData?.temperature} 
-          unit="°C" 
-          icon={Thermometer} 
+        <TelemetryCard
+          title="Temperature"
+          value={containerData?.temperature}
+          unit="°C"
+          icon={Thermometer}
         />
-        <TelemetryCard 
-          title="Humidity" 
-          value={containerData?.humidity} 
-          unit="%" 
-          icon={Droplets} 
+        <TelemetryCard
+          title="Humidity"
+          value={containerData?.humidity}
+          unit="%"
+          icon={Droplets}
         />
       </div>
 
       <div className="card" style={{ marginTop: '24px', padding: '20px' }}>
         <h2 style={{ fontSize: '1.125rem', marginBottom: '16px' }}>Next Checkpoint</h2>
-        {currentTrip ? (
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
-            <div>
-              <div style={{ fontSize: '1.125rem', fontWeight: 600 }}>{currentTrip.destination}</div>
-              <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
-                ETA: {currentTrip.estimatedArrival ? new Date(currentTrip.estimatedArrival).toLocaleString() : 'Calculating...'}
-              </div>
-            </div>
-            <button className="btn btn-primary" onClick={() => window.open(`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(currentTrip.destination)}`, '_blank')}>
-              Navigate
-            </button>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div>
+            <div style={{ fontSize: '1.125rem', fontWeight: 600 }}>Ranchi Distribution Center</div>
+            <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>ETA: 2h 45m • 155 km remaining</div>
           </div>
-        ) : (
-           <div style={{ padding: '16px', textAlign: 'center', color: 'var(--text-tertiary)', background: 'var(--bg-hover)', borderRadius: '12px' }}>
-             No checkpoints available. Waiting for new trip assignment.
-           </div>
-        )}
+          <button className="btn btn-primary">Navigate</button>
+        </div>
       </div>
     </div>
   );
