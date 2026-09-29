@@ -54,6 +54,7 @@ function generateSimulatedContainer(prev, overrides = {}) {
       lng: parseFloat(smoothValue(base.gps?.lng || 86.4304, 86.4304 + Math.cos(t / 200) * 0.005, 0.01).toFixed(6))
     },
     timestamp: Date.now(),
+    tamper: false,
     simulated: true,
   };
 }

@@ -128,6 +128,17 @@ export function AlertProvider({ children }) {
     }
   }, [driverData]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Tamper Detection — fires alert when containerData.tamper is true
+  useEffect(() => {
+    if (!containerData) return;
+
+    if (containerData.tamper === true && shouldAlert('tamper_detected')) {
+      addAlert(createAlert('tamper_detected', 'CRITICAL', 'Hardware Tamper Detected',
+        'Container tamper switch triggered! The container may have been opened or physically compromised. Immediate inspection required.',
+        'Container ESP32', null, 'FT-CNT-001'));
+    }
+  }, [containerData]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Manually trigger simulation alerts (for demo)
   const simulateAlert = useCallback((type) => {
     const alertMap = {

@@ -80,6 +80,19 @@ aedes.on("publish", packet => {
       latestContainerData.receivedAt = new Date().toISOString();
       io.emit("farmtrace:container:data", latestContainerData);
       // console.log(`[CONTAINER DATA] Temp=${latestContainerData.temperature ?? "-"} | Humidity=${latestContainerData.humidity ?? "-"} | MQ6=${latestContainerData.mq6 ?? "-"}`);
+
+      // --- Tamper Detection ---
+      if (latestContainerData.tamper === true) {
+        console.log(`[ALERT] TAMPER DETECTED on container device!`);
+        io.emit("farmtrace:tamper:alert", {
+          type: 'TAMPER_DETECTED',
+          severity: 'critical',
+          message: 'Hardware tamper detected! Container may have been opened or sensor physically compromised.',
+          device: 'container',
+          timestamp: new Date().toISOString(),
+          sensorData: latestContainerData
+        });
+      }
     } catch (err) {
       console.error("[MQTT] Invalid container JSON:", err.message);
     }

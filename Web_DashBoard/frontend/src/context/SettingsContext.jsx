@@ -7,11 +7,10 @@ const DEFAULT_SETTINGS = {
   // Humidity thresholds (%)
   humidityMin: 60,
   humidityMax: 80,
-  // MQ3 thresholds (Alcohol Risk Index)
-  mq3Normal: 300,      // >= 300 is normal
-  mq3Suspicious: 200,  // 200-299
-  mq3HighRisk: 80,     // 80-199
-  mq3Critical: 80,     // < 80
+  // MQ3 thresholds (Driver Alcohol Level)
+  mq3Normal: 300,      // 0-300 is Normal
+  mq3Moderate: 600,    // 300-600 is Moderate
+  mq3Critical: 600,    // > 600 is Critical (up to 900)
   // MQ6 thresholds (Gas Sensor Index)
   mq6Normal: 400,      // <= 400 is normal
   mq6Elevated: 500,    // 401-500
@@ -55,9 +54,8 @@ export function SettingsProvider({ children }) {
   // Classification helpers
   const classifyMQ3 = useCallback((value) => {
     if (value == null) return { status: 'UNKNOWN', color: '#94A3B8', level: 0 };
-    if (value >= settings.mq3Normal) return { status: 'NORMAL', color: '#16A34A', level: 0 };
-    if (value >= settings.mq3Suspicious) return { status: 'SUSPICIOUS', color: '#F59E0B', level: 1 };
-    if (value >= settings.mq3HighRisk) return { status: 'HIGH RISK', color: '#EA580C', level: 2 };
+    if (value <= settings.mq3Normal) return { status: 'NORMAL', color: '#16A34A', level: 0 };
+    if (value <= settings.mq3Moderate) return { status: 'MODERATE', color: '#F59E0B', level: 1 };
     return { status: 'CRITICAL', color: '#DC2626', level: 3 };
   }, [settings]);
 

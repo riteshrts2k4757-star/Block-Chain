@@ -1,16 +1,19 @@
 import React, { useEffect, useState } from 'react';
 import { useTelemetry } from '../../context/TelemetryContext';
 import { useAuth } from '../../context/AuthContext';
+import { useSettings } from '../../context/SettingsContext';
 import { driverPortalService } from '../../services/driverPortal';
 import { 
   Navigation, Thermometer, Droplets, Battery, AlertCircle, Loader, 
-  MapPin, CheckCircle, Clock, Truck, ShieldAlert, Coffee, PowerOff, Activity 
+  MapPin, CheckCircle, Clock, Truck, ShieldAlert, Coffee, PowerOff, Activity,
+  Wine, AlertTriangle 
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 export default function DriverDashboard() {
   const { driverData, containerData, mqttStatus } = useTelemetry();
   const { user } = useAuth();
+  const { classifyMQ3 } = useSettings();
   const navigate = useNavigate();
   
   const [dashboardData, setDashboardData] = useState(null);
@@ -259,6 +262,28 @@ export default function DriverDashboard() {
         </div>
       </div>
 
+      {/* TAMPER WARNING BANNER */}
+      {containerData?.tamper === true && (
+        <div style={{
+          background: 'linear-gradient(135deg, #7F1D1D, #991B1B)',
+          color: '#FCA5A5',
+          padding: '16px 24px',
+          borderRadius: 'var(--radius-lg)',
+          marginBottom: '24px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '12px',
+          border: '1px solid #DC2626',
+          animation: 'pulse 2s infinite'
+        }}>
+          <AlertTriangle size={24} color="#FCA5A5" />
+          <div>
+            <div style={{ fontWeight: 700, fontSize: '1rem', color: '#FECACA' }}>⚠ TAMPER ALERT</div>
+            <div style={{ fontSize: '0.875rem', opacity: 0.9 }}>Container tamper switch has been triggered! The container may have been opened or physically compromised. Contact dispatch immediately.</div>
+          </div>
+        </div>
+      )}
+
       {/* LIVE VEHICLE STATUS */}
       <h2 style={{ fontSize: '1.25rem', fontWeight: 700, margin: '0 0 16px 0', display: 'flex', alignItems: 'center', gap: '8px' }}>
         <Activity size={20} color="var(--primary)" /> Live Vehicle Status
@@ -295,6 +320,23 @@ export default function DriverDashboard() {
              {renderTelemetryValue(driverData?.battery, '%')}
            </div>
         </div>
+
+        {/* DRIVER ALCOHOL LEVEL */}
+        {(() => {
+          const mq3Val = driverData?.mq3;
+          const mq3Class = classifyMQ3(mq3Val);
+          return (
+            <div className="card" style={{ padding: '16px', borderLeft: `3px solid ${mq3Class.color}` }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.875rem', color: 'var(--text-secondary)', marginBottom: '8px' }}>
+                <Wine size={16} color={mq3Class.color} /> Alcohol Level
+              </div>
+              <div style={{ fontSize: '1.5rem', fontWeight: 700 }}>{renderTelemetryValue(mq3Val)}</div>
+              <div style={{ fontSize: '0.75rem', fontWeight: 600, color: mq3Class.color, marginTop: '4px' }}>
+                {mq3Class.status}
+              </div>
+            </div>
+          );
+        })()}
         
         <div className="card" style={{ padding: '16px' }}>
            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.875rem', color: 'var(--text-secondary)', marginBottom: '8px' }}>

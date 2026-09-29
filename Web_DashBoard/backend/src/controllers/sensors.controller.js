@@ -54,7 +54,11 @@ exports.receiveBatchData = async (req, res) => {
           await SensorRecord.create({
             deviceId, containerId: record.containerId, shipmentId: record.shipmentId, sequence: record.sequence,
             timestamp: record.timestamp, temperature: record.temperature, humidity: record.humidity,
-            ethylene: record.ethylene, battery: record.battery, syncStatus: 'synced'
+            ethylene: record.ethylene, mq6: record.mq6, mq3: record.mq3,
+            battery: record.battery, solarVoltage: record.solar,
+            latitude: record.gps?.lat, longitude: record.gps?.lng,
+            tamper: record.tamper || false,
+            syncStatus: 'synced'
           });
           accepted++;
           
@@ -94,6 +98,28 @@ exports.receiveBatchData = async (req, res) => {
             // Normal
             await resolveAlert('HUMIDITY_HIGH', deviceId);
             await resolveAlert('HUMIDITY_LOW', deviceId);
+          }
+
+          // --- Driver Alcohol Level (MQ3) ---
+          // 0-300: Normal, 300-600: Moderate, 600-900: Critical
+          if (record.mq3 != null) {
+            if (record.mq3 > 600) {
+              await handleAlert('ALCOHOL_CRITICAL', 'critical', `Driver alcohol level is CRITICAL (MQ3: ${record.mq3}). Immediate action required!`, record.mq3, 600, record.shipmentId, record.containerId, deviceId);
+            } else if (record.mq3 > 300) {
+              await handleAlert('ALCOHOL_MODERATE', 'warning', `Driver alcohol level is MODERATE (MQ3: ${record.mq3}). Monitor closely.`, record.mq3, 300, record.shipmentId, record.containerId, deviceId);
+            } else {
+              // Normal — resolve any existing alcohol alerts
+              await resolveAlert('ALCOHOL_CRITICAL', deviceId);
+              await resolveAlert('ALCOHOL_MODERATE', deviceId);
+            }
+          }
+
+          // --- Tamper Detection ---
+          if (record.tamper === true) {
+            await handleAlert('TAMPER_DETECTED', 'critical', `Hardware tamper detected on device ${deviceId}! Container may have been opened or sensor physically compromised.`, true, false, record.shipmentId, record.containerId, deviceId);
+          } else if (record.tamper === false) {
+            // Tamper switch is back to normal — resolve
+            await resolveAlert('TAMPER_DETECTED', deviceId);
           }
 
         } else {
