@@ -145,10 +145,9 @@ export default function LiveTelemetry() {
 
   const evaluateMQ3 = (current, isOfflineFlag) => {
     if (isOfflineFlag || current == null) return { status: 'OFFLINE', color: 'var(--text-tertiary)', badge: 'OFFLINE' };
-    if (current <= 79) return { status: 'CRITICAL', color: 'var(--danger)', badge: 'CRITICAL' };
-    if (current <= 199) return { status: 'HIGH RISK', color: 'var(--warning)', badge: 'HIGH RISK' };
-    if (current <= 299) return { status: 'SUSPICIOUS', color: 'var(--warning)', badge: 'SUSPICIOUS' };
-    return { status: 'NORMAL', color: 'var(--success)', badge: 'NORMAL' }; 
+    if (current <= 300) return { status: 'NORMAL', color: 'var(--success)', badge: 'NORMAL' };
+    if (current <= 600) return { status: 'MODERATE', color: 'var(--warning)', badge: 'MODERATE' };
+    return { status: 'CRITICAL', color: 'var(--danger)', badge: 'CRITICAL' }; 
   };
 
   const evaluateMQ6 = (current, isOfflineFlag) => {
@@ -263,8 +262,8 @@ export default function LiveTelemetry() {
             primary={true}
           />
           <SensorCard 
-            title="Volatile Gases" value={actualGas} unit="IDX" icon={Wind} state={gasState} 
-            allowedText="NORMAL: 300 TO 400" 
+            title="Ethylene Gas" value={actualGas} unit="IDX" icon={Wind} state={gasState} 
+            allowedText="NORMAL: 0 TO 400" 
             primary={true}
           />
         </div>
@@ -279,7 +278,7 @@ export default function LiveTelemetry() {
           />
           <SensorCard 
             title="Driver Alcohol" value={driverAlc} unit="IDX" icon={Zap} state={alcState} 
-            allowedText="NORMAL: 300 TO 450" 
+            allowedText="NORMAL: 0 TO 300" 
           />
           <SensorCard 
             title="Cont. Battery" value={contBat} unit="%" icon={Battery} state={evaluateState(contBat, 20, 100, isOffline)} 
@@ -308,7 +307,7 @@ export default function LiveTelemetry() {
         </div>
         
         <div className="grid grid-2 gap-24" style={{ marginBottom: '24px' }}>
-          <ChartCard title="Gas Sensor History" data={containerHistory} dataKey="mq6" color="#8B5CF6" unit="ppm" yDomain={['auto', 'auto']} icon={Wind} />
+          <ChartCard title="Ethylene Gas History" data={containerHistory} dataKey="mq6" color="#8B5CF6" unit="ppm" yDomain={['auto', 'auto']} icon={Wind} />
           <ChartCard title="Vibration (Motion Z)" data={driverHistory} dataKey="motion.z" color="#EF4444" unit="g" yDomain={['auto', 'auto']} icon={Activity} />
         </div>
         

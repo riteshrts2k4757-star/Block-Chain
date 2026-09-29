@@ -1,19 +1,17 @@
 import React, { useEffect, useState } from 'react';
 import { useTelemetry } from '../../context/TelemetryContext';
 import { useAuth } from '../../context/AuthContext';
-import { useSettings } from '../../context/SettingsContext';
 import { driverPortalService } from '../../services/driverPortal';
 import { 
   Navigation, Thermometer, Droplets, Battery, AlertCircle, Loader, 
   MapPin, CheckCircle, Clock, Truck, ShieldAlert, Coffee, PowerOff, Activity,
-  Wine, AlertTriangle 
+  AlertTriangle 
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 export default function DriverDashboard() {
   const { driverData, containerData, mqttStatus } = useTelemetry();
   const { user } = useAuth();
-  const { classifyMQ3 } = useSettings();
   const navigate = useNavigate();
   
   const [dashboardData, setDashboardData] = useState(null);
@@ -318,32 +316,6 @@ export default function DriverDashboard() {
            </div>
            <div style={{ fontSize: '1.5rem', fontWeight: 700, color: driverData?.battery < 20 ? 'var(--danger)' : 'inherit' }}>
              {renderTelemetryValue(driverData?.battery, '%')}
-           </div>
-        </div>
-
-        {/* DRIVER ALCOHOL LEVEL */}
-        {(() => {
-          const mq3Val = driverData?.mq3;
-          const mq3Class = classifyMQ3(mq3Val);
-          return (
-            <div className="card" style={{ padding: '16px', borderLeft: `3px solid ${mq3Class.color}` }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.875rem', color: 'var(--text-secondary)', marginBottom: '8px' }}>
-                <Wine size={16} color={mq3Class.color} /> Alcohol Level
-              </div>
-              <div style={{ fontSize: '1.5rem', fontWeight: 700 }}>{renderTelemetryValue(mq3Val)}</div>
-              <div style={{ fontSize: '0.75rem', fontWeight: 600, color: mq3Class.color, marginTop: '4px' }}>
-                {mq3Class.status}
-              </div>
-            </div>
-          );
-        })()}
-        
-        <div className="card" style={{ padding: '16px' }}>
-           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.875rem', color: 'var(--text-secondary)', marginBottom: '8px' }}>
-             <Navigation size={16} color="var(--primary)" /> GPS Status
-           </div>
-           <div style={{ fontSize: '1.125rem', fontWeight: 700, color: mqttStatus === 'connected' ? 'var(--success)' : 'var(--danger)', display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
-             {mqttStatus === 'connected' ? <><CheckCircle size={18}/> Connected</> : <><AlertCircle size={18}/> Offline</>}
            </div>
         </div>
         
