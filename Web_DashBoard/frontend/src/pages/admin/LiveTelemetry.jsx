@@ -134,18 +134,21 @@ export default function LiveTelemetry() {
 
   const evaluateState = (current, min, max, isOfflineFlag) => {
     if (isOfflineFlag || current == null) return { status: 'OFFLINE', color: 'var(--text-tertiary)', badge: 'OFFLINE' };
-    if (!min && !max) return { status: 'NORMAL', color: 'var(--success)', badge: 'NORMAL' };
-    const span = max - min;
+    if (min == null && max == null) return { status: 'NORMAL', color: 'var(--success)', badge: 'NORMAL' };
+    
+    const span = max - (min || 0);
     const margin = span * 0.1; 
+    
     if (current > max) return { status: 'TOO HIGH', color: 'var(--danger)', badge: 'CRITICAL' };
-    if (current < min) return { status: 'TOO LOW', color: 'var(--danger)', badge: 'CRITICAL' };
-    if (current > max - margin || current < min + margin) return { status: 'WARNING', color: 'var(--warning)', badge: 'WARNING' };
+    if (min != null && current < min) return { status: 'TOO LOW', color: 'var(--danger)', badge: 'CRITICAL' };
+    if (current > max - margin || (min != null && current < min + margin)) return { status: 'WARNING', color: 'var(--warning)', badge: 'WARNING' };
+    
     return { status: 'NORMAL', color: 'var(--success)', badge: 'NORMAL' };
   };
 
   const evaluateMQ3 = (current, isOfflineFlag) => {
     if (isOfflineFlag || current == null) return { status: 'OFFLINE', color: 'var(--text-tertiary)', badge: 'OFFLINE' };
-    if (current <= 300) return { status: 'NORMAL', color: 'var(--success)', badge: 'NORMAL' };
+    if (current <= 400) return { status: 'NORMAL', color: 'var(--success)', badge: 'NORMAL' };
     if (current <= 600) return { status: 'MODERATE', color: 'var(--warning)', badge: 'MODERATE' };
     return { status: 'CRITICAL', color: 'var(--danger)', badge: 'CRITICAL' }; 
   };

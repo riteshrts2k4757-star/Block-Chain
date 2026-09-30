@@ -8,8 +8,8 @@ const DEFAULT_SETTINGS = {
   humidityMin: 60,
   humidityMax: 80,
   // MQ3 thresholds (Driver Alcohol Level)
-  mq3Normal: 300,      // 0-300 is Normal
-  mq3Moderate: 600,    // 300-600 is Moderate
+  mq3Normal: 400,      // 0-400 is Normal
+  mq3Moderate: 600,    // 400-600 is Moderate
   mq3Critical: 600,    // > 600 is Critical (up to 900)
   // MQ6 thresholds (Gas Sensor Index)
   mq6Normal: 400,      // <= 400 is normal
