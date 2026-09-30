@@ -47,6 +47,7 @@ app.use('/api/commands', require('./routes/commands'));
 app.use('/api/settings', require('./routes/settings'));
 app.use('/api/load-profiles', require('./routes/loadProfiles'));
 app.use('/api/driver-portal', require('./routes/driverPortal'));
+app.use('/api/integrity', require('./routes/integrity'));
 
 // Error handling middleware
 app.use((err, req, res, next) => {

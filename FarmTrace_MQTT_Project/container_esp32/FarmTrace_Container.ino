@@ -511,6 +511,8 @@ void maintainWiFi() {
 // MQTT CONNECTION
 // ============================================================
 
+bool wasConnected = false;
+
 bool connectMQTT() {
 
   if (
@@ -535,10 +537,18 @@ bool connectMQTT() {
       "[MQTT] Connected."
     );
 
-    mqtt.publish(
-      TOPIC_STATUS,
-      "container_online"
-    );
+    if (!wasConnected) {
+      mqtt.publish(
+        TOPIC_STATUS,
+        "{\"device\":\"container\",\"status\":\"online\",\"sync\":\"ready\"}"
+      );
+      wasConnected = true;
+    } else {
+      mqtt.publish(
+        TOPIC_STATUS,
+        "{\"device\":\"container\",\"status\":\"online\",\"sync\":\"restored\"}"
+      );
+    }
 
     return true;
   }

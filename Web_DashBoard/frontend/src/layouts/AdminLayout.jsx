@@ -26,8 +26,6 @@ const adminNavItems = [
   { section: 'Operations' },
   { path: '/admin/load-config', label: 'Load Configuration', icon: Package },
   { path: '/admin/live-testing', label: 'Live Load Testing', icon: Activity },
-  { path: '/admin/trips', label: 'Trips', icon: Route },
-  { path: '/admin/logbook', label: 'Logbook', icon: Clock },
   { path: '/admin/alerts', label: 'Alerts', icon: AlertTriangle, badge: true },
   
   { section: 'Security' },

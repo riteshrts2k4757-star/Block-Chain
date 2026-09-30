@@ -22,6 +22,18 @@ export const connectMQTT = () => {
   socket.on('farmtrace:driver:data', (data) => {
     listeners.forEach(listener => listener({ topic: 'farmtrace/driver/data', data }));
   });
+
+  socket.on('farmtrace:container:integrity', (data) => {
+    listeners.forEach(listener => listener({ topic: 'farmtrace/container/integrity', data }));
+  });
+
+  socket.on('farmtrace:integrity:new', (data) => {
+    listeners.forEach(listener => listener({ topic: 'farmtrace/integrity/new', data }));
+  });
+
+  socket.on('farmtrace:integrity:update', (data) => {
+    listeners.forEach(listener => listener({ topic: 'farmtrace/integrity/update', data }));
+  });
   
   socket.on('connect_error', (err) => {
     console.error('Socket Connection Error', err);
