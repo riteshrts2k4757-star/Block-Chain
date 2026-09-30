@@ -139,7 +139,7 @@ export default function LiveLoadTesting() {
   const actualTemp = containerData?.temperature ?? null;
   const actualHum = containerData?.humidity ?? null;
   const actualGas = containerData?.mq6 ?? null;
-  const actualVib = driverData?.motion?.z ?? null;
+  const actualVib = 0;
 
   const currentTemp = testMode && testValues.temp !== null ? testValues.temp : actualTemp;
   const currentHum = testMode && testValues.humidity !== null ? testValues.humidity : actualHum;

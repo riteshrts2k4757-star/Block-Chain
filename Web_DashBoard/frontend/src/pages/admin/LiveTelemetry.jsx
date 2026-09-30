@@ -161,7 +161,7 @@ export default function LiveTelemetry() {
   const actualTemp = containerData?.temperature ?? null;
   const actualHum = containerData?.humidity ?? null;
   const actualGas = containerData?.mq6 ?? null;
-  const actualVib = driverData?.motion?.z ?? null;
+  const actualVib = 0;
   const driverAlc = driverData?.mq3 ?? null;
   const contBat = containerData?.battery ?? null;
   const contSol = containerData?.solar ?? null;

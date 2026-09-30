@@ -98,7 +98,7 @@ export function SimulationProvider({ children }) {
     roll: parseFloat((Math.sin(Date.now() / 8000) * 2).toFixed(1)),
     pitch: parseFloat((Math.cos(Date.now() / 7000) * 1.5).toFixed(1)),
     yaw: parseFloat((Math.sin(Date.now() / 10000) * 0.8).toFixed(1)),
-    vibration: parseFloat((0.1 + Math.abs(Math.sin(Date.now() / 3000) * 0.15)).toFixed(2)),
+    vibration: 0,
   };
 
   return (
